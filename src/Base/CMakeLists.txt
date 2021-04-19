@@ -84,6 +84,7 @@ generate_from_xml(CoordinateSystemPy)
 generate_from_xml(PersistencePy)
 generate_from_xml(VectorPy)
 generate_from_xml(MatrixPy)
+generate_from_xml(MetadataPy)
 generate_from_xml(RotationPy)
 generate_from_xml(PlacementPy)
 generate_from_xml(AxisPy)
@@ -168,6 +169,7 @@ SET(FreeCADBase_XML_SRCS
     BoundBoxPy.xml
     CoordinateSystemPy.xml
     MatrixPy.xml
+    MetadataPy.xml
     PersistencePy.xml
     PlacementPy.xml
     RotationPy.xml
@@ -240,6 +242,8 @@ SET(FreeCADBase_CPP_SRCS
     Matrix.cpp
     MatrixPyImp.cpp
     MemDebug.cpp
+    Metadata.cpp
+    MetadataPyImp.cpp
     Parameter.xsd
     Parameter.cpp
     ParameterPy.cpp
@@ -299,6 +303,7 @@ SET(FreeCADBase_HPP_SRCS
     InputSource.h
     Interpreter.h
     Matrix.h
+    Metadata.h
     MemDebug.h
     Observer.h
     Parameter.h
