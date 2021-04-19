@@ -38,6 +38,7 @@
 #include "PrefWidgets.h"
 #include "PythonConsole.h"
 #include "Language/Translator.h"
+#include "Gui/ThemeManager.h"
 
 using namespace Gui::Dialog;
 
@@ -82,6 +83,16 @@ DlgGeneralImp::DlgGeneralImp( QWidget* parent )
         else
             ui->AutoloadModuleCombo->addItem(px, it.key(), QVariant(it.value()));
     }
+
+    // Populate the Themes menu
+    //auto themeNames = App::GetApplication().GetThemeManager()->themeNames();
+    ui->Theme->clear();
+    auto themes = Application::Instance->themeManager()->themeNames();
+    for (const auto& theme : themes) {
+        ui->Theme->addItem(QString::fromStdString(theme));
+    }
+    ui->Theme->insertSeparator(themes.size());
+    ui->Theme->addItem(tr("Create new..."));
 }
 
 /**

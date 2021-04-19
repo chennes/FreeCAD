@@ -1139,6 +1139,7 @@ SET(FreeCADGui_CPP_SRCS
     resource.cpp
     Control.cpp
     SpaceballEvent.cpp
+    ThemeManager.cpp
     Thumbnail.cpp
     Utilities.cpp
     WaitCursor.cpp
@@ -1171,6 +1172,7 @@ SET(FreeCADGui_SRCS
     Qt4All.h
     Control.h
     SpaceballEvent.h
+    ThemeManager.h
     Thumbnail.h
     Utilities.h
     WaitCursor.h

@@ -43,6 +43,7 @@ class MacroManager;
 class MDIView;
 class MainWindow;
 class MenuItem;
+class ThemeManager;
 class ViewProvider;
 class ViewProviderDocumentObject;
 
@@ -215,6 +216,8 @@ public:
     /// helper which create the commands
     void createStandardOperations();
     //@}
+
+    Gui::ThemeManager* themeManager(void);
 
     /** @name Init, Destruct an Access methods */
     //@{
