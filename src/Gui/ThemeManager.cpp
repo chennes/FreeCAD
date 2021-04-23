@@ -25,14 +25,18 @@
 
 #ifndef _PreComp_
 # include <memory>
+# include <string_view>
+# include <mutex>
 #endif
 
 #include <boost/filesystem.hpp>
 
 #include "ThemeManager.h"
 #include "Base/Metadata.h"
+#include "Base/Parameter.h"
 
 #include <App/Application.h>
+
 
 using namespace Gui;
 using namespace xercesc;
@@ -66,6 +70,7 @@ ThemeManager::ThemeManager(const std::vector<boost::filesystem::path> &themePath
 
 void ThemeManager::rescan()
 {
+	std::lock_guard<std::mutex> lock(_mutex);
 	for (const auto& path : _themePaths) {
 		if (fs::exists(path) && fs::is_directory(path)) {
 			for (const auto& mod : fs::directory_iterator(path)) {
@@ -95,6 +100,7 @@ void ThemeManager::rescan()
 
 std::vector<std::string> ThemeManager::themeNames() const
 {
+	std::lock_guard<std::mutex> lock(_mutex);
 	std::vector<std::string> names;
 	for (const auto &theme : _themes)
 		names.push_back(theme.first);
@@ -118,7 +124,155 @@ void ThemeManager::apply(const Theme& theme) const
 {
 }
 
-void ThemeManager::save(const std::string& name, const std::string& templateFile, bool compress)
+void copyTemplateParameters(Base::Reference<ParameterGrp> templateGroup, const std::string &path, Base::Reference<ParameterGrp> outputGroup)
 {
+	auto userParameterHandle = App::GetApplication().GetParameterGroupByPath(path.c_str());
+
+	auto boolMap = templateGroup->GetBoolMap();
+	for (const auto& kv : boolMap) {
+		auto currentValue = userParameterHandle->GetBool(kv.first.c_str(), kv.second);
+		outputGroup->SetBool(kv.first.c_str(), currentValue);
+	}
+
+	auto intMap = templateGroup->GetIntMap();
+	for (const auto& kv : intMap) {
+		auto currentValue = userParameterHandle->GetInt(kv.first.c_str(), kv.second);
+		outputGroup->SetInt(kv.first.c_str(), currentValue);
+	}
+
+	auto uintMap = templateGroup->GetUnsignedMap();
+	for (const auto& kv : uintMap) {
+		auto currentValue = userParameterHandle->GetUnsigned(kv.first.c_str(), kv.second);
+		outputGroup->SetUnsigned(kv.first.c_str(), currentValue);
+	}
+
+	auto floatMap = templateGroup->GetFloatMap();
+	for (const auto& kv : floatMap) {
+		auto currentValue = userParameterHandle->GetFloat(kv.first.c_str(), kv.second);
+		outputGroup->SetFloat(kv.first.c_str(), currentValue);
+	}
+
+	auto asciiMap = templateGroup->GetASCIIMap();
+	for (const auto& kv : asciiMap) {
+		auto currentValue = userParameterHandle->GetASCII(kv.first.c_str(), kv.second.c_str());
+		outputGroup->SetASCII(kv.first.c_str(), currentValue.c_str());
+	}
+
+	// Recurse...
+	auto templateSubgroups = templateGroup->GetGroups();
+	for (auto& templateSubgroup : templateSubgroups) {
+		std::string sgName = templateSubgroup->GetGroupName();
+		auto outputSubgroupHandle = outputGroup->GetGroup(sgName.c_str());
+		copyTemplateParameters(templateSubgroup, path + "/" + sgName, outputSubgroupHandle);
+	}
+}
+
+void copyTemplateParameters(/*const*/ ParameterManager &templateParameterManager, ParameterManager &outputParameterManager)
+{
+	auto groups = templateParameterManager.GetGroups();
+	for (auto& group : groups) {
+		std::string name = group->GetGroupName();
+		auto groupHandle = outputParameterManager.GetGroup(name.c_str());
+		copyTemplateParameters(group, "User parameter:" + name, groupHandle);
+	}
+}
+
+void ThemeManager::save(const std::string& name, const std::vector<boost::filesystem::path> &templates)
+{
+	auto savedThemesDirectory = fs::path(App::Application::getUserAppDataDir()) / "SavedThemes";
+	fs::path themeDirectory(savedThemesDirectory / name);
+	if (fs::exists(themeDirectory) && !fs::is_directory(themeDirectory))
+		throw std::runtime_error("Cannot create " + savedThemesDirectory.string() + ": file with that name exists already");
+
+	if (!fs::exists(themeDirectory))
+		fs::create_directories(themeDirectory);
+
+	// Create or update the saved user themes package.xml metadata file
+	std::unique_ptr<Base::Metadata> metadata;
+	if (fs::exists(savedThemesDirectory / "package.xml")) {
+		metadata = std::make_unique<Base::Metadata>(savedThemesDirectory / "package.xml");
+	}
+	else {
+		metadata = std::make_unique<Base::Metadata>();
+		metadata->setName("User-Saved Themes");
+		metadata->setDescription("Generated automatically -- edits may be lost when saving new themes");
+		metadata->setVersion(1);
+		Base::Meta::Contact c;
+		c.name = "No Maintainer";
+		c.email = "email@freecadweb.org";
+		metadata->addMaintainer(c);
+	}
+	Base::Metadata newThemeMetadata;
+	newThemeMetadata.setName(name);
+	metadata->addContentItem("theme", newThemeMetadata);
+	metadata->write(savedThemesDirectory);
+
+	// Create the config file
+	ParameterManager outputParameterManager;
+	ParameterManager templateParameterManager;
+	for (const auto& t : templates) {
+		templateParameterManager.LoadDocument(t.string().c_str());
+		copyTemplateParameters(templateParameterManager, outputParameterManager);
+	}
+	auto cfgFilename = savedThemesDirectory / name / (name + ".cfg");
+	outputParameterManager.SaveDocument(cfgFilename.string().c_str());
+
+	// Future work: copy any referenced auxilliary files that we recognize
+}
+
+// Needed until we support only C++20 and above and can use std::string's built-in ends_with()
+bool fc_ends_with (std::string_view str, std::string_view suffix)
+{
+	return str.size() >= suffix.size() && str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
+}
+
+std::vector<ThemeManager::templateFile> scanForTemplateFiles(const std::string &groupName, const fs::path& entry)
+{
+	std::vector<ThemeManager::templateFile> templateFiles;
+	if (fs::exists(entry)) {
+		if (fs::is_directory(entry)) {
+			std::string subgroupName = groupName + "/" + entry.filename().string();
+			for (const auto& subentry : fs::directory_iterator(entry)) {
+				auto contents = scanForTemplateFiles(subgroupName, subentry);
+				std::copy(contents.begin(), contents.end(), std::back_inserter(templateFiles));
+			}
+		}
+		else if (fs::is_regular(entry)) {
+			auto filename = entry.filename().string();
+			if (fc_ends_with(filename, "_theme_template.cfg")) { //19 chars
+				auto name = filename.substr(0,filename.length() - 19);
+				std::replace(name.begin(), name.end(), '_', ' ');
+				templateFiles.emplace_back(ThemeManager::templateFile{ groupName, name, entry });
+			}
+		}
+	}
+	return templateFiles;
+}
+
+std::vector<ThemeManager::templateFile> ThemeManager::templateFiles(bool rescan)
+{
+	std::lock_guard<std::mutex> lock(_mutex);
+	if (!_templateFiles.empty() && !rescan)
+		return _templateFiles;
+
+	// Locate all of the template files available on this system
+	// Template files end in "_theme_template.cfg" -- They are located in:
+	// * $INSTALL_DIR/data/Gui/ThemeTemplates/*
+	// * $DATA_DIR/Mod/*
+
+	auto resourcePath = fs::path(App::Application::getResourceDir()) / "Gui" / "ThemeTemplates";
+	auto modPath = fs::path(App::Application::getUserAppDataDir()) / "Mod";
+
+	std::string group = "Built-In";
+	const auto localFiles = scanForTemplateFiles(group, resourcePath);
+	std::copy(localFiles.begin(), localFiles.end(), std::back_inserter(_templateFiles));
+
+	for (const auto& mod : fs::directory_iterator(modPath)) {
+		group = mod.path().filename().string();
+		const auto localFiles = scanForTemplateFiles(group, mod);
+		std::copy(localFiles.begin(), localFiles.end(), std::back_inserter(_templateFiles));
+	}
+	
+	return _templateFiles;
 }
 

@@ -51,6 +51,9 @@ public:
 protected:
     void changeEvent(QEvent *e);
 
+protected Q_SLOTS:
+    void themeSelectionChanged(int index);
+
 private:
     void setRecentFileSize();
 

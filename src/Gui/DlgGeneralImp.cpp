@@ -40,6 +40,8 @@
 #include "Language/Translator.h"
 #include "Gui/ThemeManager.h"
 
+#include "DlgCreateNewThemeImp.h"
+
 using namespace Gui::Dialog;
 
 /* TRANSLATOR Gui::Dialog::DlgGeneralImp */
@@ -93,6 +95,8 @@ DlgGeneralImp::DlgGeneralImp( QWidget* parent )
     }
     ui->Theme->insertSeparator(themes.size());
     ui->Theme->addItem(tr("Create new..."));
+    connect(ui->Theme, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &DlgGeneralImp::themeSelectionChanged);
+    
 }
 
 /**
@@ -309,5 +313,21 @@ void DlgGeneralImp::changeEvent(QEvent *e)
         QWidget::changeEvent(e);
     }
 }
+
+void DlgGeneralImp::themeSelectionChanged(int index)
+{
+    // The last item in the list is "Save as new..."
+    if (index == ui->Theme->count() - 1) {
+
+        std::unique_ptr<DlgCreateNewThemeImp> newThemeDialog = std::make_unique<DlgCreateNewThemeImp>(this);
+
+        auto themeTemplates = Application::Instance->themeManager()->templateFiles();
+        for (const auto& t : themeTemplates)
+            newThemeDialog->addThemeTemplate(t.group, t.name, true);
+        newThemeDialog->exec();
+
+    }
+}
+
 
 #include "moc_DlgGeneralImp.cpp"

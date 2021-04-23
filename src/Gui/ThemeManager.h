@@ -25,6 +25,7 @@
 
 #include <vector>
 #include <string>
+#include <mutex>
 
 #include "Base/Metadata.h"
 
@@ -105,11 +106,21 @@ namespace Gui {
 		 * 
 		 * If the named theme does not exist, this creates it on disk. If it does exist, this overwrites the original.
 		 */
-		void save(const std::string& name, const std::string &templateFile = std::string(), bool compress = true);
+		void save(const std::string& name, const std::vector<boost::filesystem::path>& templates);
+
+		struct templateFile {
+			std::string group;
+			std::string name;
+			boost::filesystem::path path;
+		};
+
+		std::vector<templateFile> templateFiles(bool rescan = false);
 
 	private:
 		std::vector<boost::filesystem::path> _themePaths;
+		std::vector<templateFile> _templateFiles;
 		std::map<std::string, Theme> _themes;
+		mutable std::mutex _mutex;
 
 	};
 

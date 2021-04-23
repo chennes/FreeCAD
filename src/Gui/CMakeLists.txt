@@ -1,5 +1,6 @@
 #add_subdirectory(Icons)
 add_subdirectory(Stylesheets)
+add_subdirectory(ThemeTemplates)
 
 if(WIN32)
 add_definitions(-DFCGui -DQIIS_MAKEDLL -DQSINT_MAKEDLL -DOVR_OS_WIN32 -DQUARTER_INTERNAL -DQUARTER_MAKE_DLL -DCOIN_DLL)
@@ -306,6 +307,7 @@ SET(Gui_UIC_SRCS
     DlgAuthorization.ui
     DlgChooseIcon.ui
     DlgCommands.ui
+    DlgCreateNewTheme.ui
     DlgCustomizeSpNavSettings.ui
     DlgDisplayProperties.ui
     DlgEditor.ui
@@ -403,6 +405,7 @@ SET(Dialog_CPP_SRCS
     Clipping.cpp
     DemoMode.cpp
     DlgActivateWindowImp.cpp
+    DlgCreateNewThemeImp.cpp
     DlgUnitsCalculatorImp.cpp
     DlgDisplayPropertiesImp.cpp
     DlgInputDialogImp.cpp
@@ -440,6 +443,7 @@ SET(Dialog_HPP_SRCS
     Clipping.h
     DemoMode.h
     DlgActivateWindowImp.h
+    DlgCreateNewThemeImp.h
     DlgUnitsCalculatorImp.h
     DlgDisplayPropertiesImp.h
     DlgInputDialogImp.h
@@ -499,6 +503,7 @@ SET(Dialog_SRCS
     DlgCheckableMessageBox.ui
     DlgTreeWidget.ui
     DlgExpressionInput.ui
+    DlgCreateNewTheme.ui
     DownloadManager.ui
     DownloadItem.ui
     DocumentRecovery.ui
