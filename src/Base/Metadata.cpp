@@ -64,8 +64,8 @@ Metadata::Metadata(const boost::filesystem::path& metadataFile)
 
     auto formatVersion = XMLString::parseInt(_dom->getAttribute(XUTF8Str("format").unicodeForm()));    
     switch (formatVersion) {
-    case 3:
-        parseVersion3(_dom);
+    case 1:
+        parseVersion1(_dom);
         break;
     default:
         throw std::exception("pacakge.xml format version is not supported by this version of FreeCAD");
@@ -77,8 +77,8 @@ Base::Metadata::Metadata(const DOMNode* domNode, int format) : _dom(nullptr)
     auto element = dynamic_cast<const DOMElement*>(domNode);
     if (element) {
         switch (format) {
-        case 3:
-            parseVersion3(element);
+        case 1:
+            parseVersion1(element);
             break;
         default:
             throw std::exception("Requested format version is not supported by this version of FreeCAD");
@@ -179,7 +179,221 @@ XERCES_CPP_NAMESPACE::DOMElement* Metadata::dom() const
     return _dom;
 }
 
-void Metadata::parseVersion3(const DOMNode *startNode)
+void Metadata::setName(const std::string& name)
+{
+    _name = name;
+}
+
+void Metadata::setVersion(int major, int minor, int patch, const std::string& suffix)
+{
+    std::stringstream s;
+    s << major << "." << major << "." << minor << "." << patch << suffix;
+    _version = s.str();
+}
+
+void Metadata::setDescription(const std::string& description)
+{
+    _description = description;
+}
+
+void Metadata::addMaintainer(const Meta::Contact& maintainer)
+{
+    _maintainer.push_back(maintainer);
+}
+
+void Metadata::addLicense(const Meta::License& license)
+{
+    _license.push_back(license);
+}
+
+void Metadata::addUrl(const Meta::Url& url)
+{
+    _url.push_back(url);
+}
+
+void Metadata::addAuthor(const Meta::Contact& author)
+{
+    _author.push_back(author);
+}
+
+void Metadata::addDepend(const Meta::Dependency& dep)
+{
+    _depend.push_back(dep);
+}
+
+void Metadata::addConflict(const Meta::Dependency& dep)
+{
+    _conflict.push_back(dep);
+}
+
+void Metadata::addReplace(const Meta::Dependency& dep)
+{
+    _replace.push_back(dep);
+}
+
+void Metadata::addTag(const std::string& tag)
+{
+    _tag.push_back(tag);
+}
+
+void Metadata::setIcon(const boost::filesystem::path& path)
+{
+    _icon = path;
+}
+
+void Metadata::setClassname(const std::string& name)
+{
+    _classname = name;
+}
+
+void Metadata::addFile(const boost::filesystem::path& path)
+{
+    _file.push_back(path);
+}
+
+void Metadata::addContentItem(const std::string& tag, const Metadata& item)
+{
+    _content.insert(std::make_pair(tag, item));
+}
+
+
+DOMElement* appendSimpleXMLNode(DOMElement *baseNode, const std::string& nodeName, const std::string& nodeContents)
+{
+    // For convenience (and brevity of final output) don't create nodes that don't have contents
+    if (nodeContents.empty())
+        return nullptr;
+
+    auto doc = baseNode->getOwnerDocument();
+    DOMElement* namedElement = doc->createElement(XUTF8Str(nodeName.c_str()).unicodeForm());
+    baseNode->appendChild(namedElement);
+    DOMText* namedNode = doc->createTextNode(XUTF8Str(nodeContents.c_str()).unicodeForm());
+    namedElement->appendChild(namedNode);
+    return namedElement;
+}
+
+void addAttribute(DOMElement* node, const std::string& key, const std::string& value)
+{
+    if (value.empty())
+        return;
+
+    node->setAttribute(XUTF8Str(key.c_str()).unicodeForm(), XUTF8Str(value.c_str()).unicodeForm());
+}
+
+void addDependencyNode(DOMElement* root, const std::string& name, const Meta::Dependency& depend)
+{
+    auto element = appendSimpleXMLNode(root, name, depend.package);
+    if (element) {
+        addAttribute(element, "version_lt", depend.version_lt);
+        addAttribute(element, "version_lte", depend.version_lte);
+        addAttribute(element, "version_eq", depend.version_eq);
+        addAttribute(element, "version_gte", depend.version_gte);
+        addAttribute(element, "version_gt", depend.version_gt);
+        addAttribute(element, "condition", depend.condition);
+    }
+}
+
+void Metadata::write(const boost::filesystem::path& file) const
+{
+    DOMImplementation* impl = DOMImplementationRegistry::getDOMImplementation(XUTF8Str("Core LS").unicodeForm());
+
+    DOMDocument* doc = impl->createDocument(0, XUTF8Str("package").unicodeForm(), 0);
+    DOMElement* root = doc->getDocumentElement();
+    root->setAttribute(XUTF8Str("version").unicodeForm(), XUTF8Str("1").unicodeForm());
+
+    appendToElement(root);
+
+    DOMLSSerializer* theSerializer = ((DOMImplementationLS*)impl)->createLSSerializer();
+    if (theSerializer->getDomConfig()->canSetParameter(XMLUni::fgDOMWRTFormatPrettyPrint, true))
+        theSerializer->getDomConfig()->setParameter(XMLUni::fgDOMWRTFormatPrettyPrint, true);
+
+    XMLFormatTarget* myFormTarget = new LocalFileFormatTarget(file.string().c_str());
+    DOMLSOutput* theOutput = ((DOMImplementationLS*)impl)->createLSOutput();
+    theOutput->setByteStream(myFormTarget);            
+    theSerializer->write(root, theOutput);
+
+    theOutput->release();
+    theSerializer->release();
+    delete myFormTarget;
+
+    doc->release();
+}
+
+void Metadata::appendToElement(DOMElement * root) const
+{
+    auto nameElement_unused = appendSimpleXMLNode(root, "name", _name);
+    auto descriptionElement_unused = appendSimpleXMLNode(root, "description", _description);
+    auto versionElement_unused = appendSimpleXMLNode(root, "version", _version);
+
+    for (const auto& maintainer : _maintainer) {
+        auto element = appendSimpleXMLNode(root, "maintainer", maintainer.name);
+        if (element)
+            addAttribute(element, "email", maintainer.email);
+    }
+
+    for (const auto& license : _license) {
+        auto element = appendSimpleXMLNode(root, "license", license.name);
+        if (element)
+            addAttribute(element, "file", license.file.string());
+    }
+
+    for (const auto& url : _url) {
+        auto element = appendSimpleXMLNode(root, "url", url.location);
+        if (element) {
+            std::string typeAsString("website");
+            switch (url.type) {
+                case Meta::UrlType::website:       typeAsString = "website";       break;
+                case Meta::UrlType::repository:    typeAsString = "repository";    break;
+                case Meta::UrlType::bugtracker:    typeAsString = "bugtracker";    break;
+                case Meta::UrlType::readme:        typeAsString = "readme";        break;
+                case Meta::UrlType::documentation: typeAsString = "documentation"; break;
+            }
+            addAttribute(element, "type", typeAsString);
+        }
+    }
+
+    for (const auto& author : _author) {
+        auto element = appendSimpleXMLNode(root, "author", author.name);
+        if (element)
+            addAttribute(element, "email", author.email);
+    }
+
+    for (const auto& depend : _depend) 
+        addDependencyNode(root, "depend", depend);
+
+    for (const auto& conflict : _conflict) 
+        addDependencyNode(root, "conflict", conflict);
+
+    for (const auto& replace : _replace) 
+        addDependencyNode(root, "replace", replace);
+
+    for (const auto &tag : _tag) 
+        auto element_unused = appendSimpleXMLNode(root, "tag", tag);
+
+    appendSimpleXMLNode(root, "icon", _icon.string());
+
+    appendSimpleXMLNode(root, "classname", _classname);
+
+    for (const auto& file : _file)
+        auto element_unused = appendSimpleXMLNode(root, "file", file.string());
+
+    for (const auto& md : _genericMetadata) {
+        auto element = appendSimpleXMLNode(root, md.first, md.second.contents);
+        for (const auto& attr : md.second.attributes)
+            addAttribute(element, attr.first, attr.second);
+    }
+
+    auto doc = root->getOwnerDocument();
+    DOMElement* contentRootElement = doc->createElement(XUTF8Str("content").unicodeForm());
+    root->appendChild(contentRootElement);
+    for (const auto& content : _content) {
+        DOMElement* contentElement = doc->createElement(XUTF8Str(content.first.c_str()).unicodeForm());
+        contentRootElement->appendChild(contentElement);
+        content.second.appendToElement(contentElement);
+    }
+}
+
+
+void Metadata::parseVersion1(const DOMNode *startNode)
 {
     auto children = startNode->getChildNodes();
 
@@ -221,23 +435,30 @@ void Metadata::parseVersion3(const DOMNode *startNode)
         else if (tagString == "icon")
             _icon = fs::path(StrXUTF8(element->getTextContent()).str);
         else if (tagString == "content")
-            parseContentNodeVersion3(element); // Recursive call
+            parseContentNodeVersion1(element); // Recursive call
         else if (child->getChildNodes()->getLength() == 0)
             _genericMetadata.insert(std::make_pair(tagString, Meta::GenericMetadata(element)));
         // else we don't recognize this tag, just ignore it, but leave it in the DOM tree
     }
 }
 
-void Metadata::parseContentNodeVersion3(const DOMElement* contentNode)
+void Metadata::parseContentNodeVersion1(const DOMElement* contentNode)
 {
     auto children = contentNode->getChildNodes();
     for (int i = 0; i < children->getLength(); ++i) {
         auto child = dynamic_cast<const DOMElement*>(children->item(i));
         if (child) {
             auto tag = StrXUTF8(child->getTagName()).str;
-            _content.insert(std::make_pair(tag, Metadata(child, 3)));
+            _content.insert(std::make_pair(tag, Metadata(child, 1)));
         }
     }
+}
+
+Meta::Contact::Contact(const std::string& name, const std::string& email) :
+    name(name),
+    email(email)
+{
+    // This has to be provided manually since we have another constructor
 }
 
 Meta::Contact::Contact(const XERCES_CPP_NAMESPACE::DOMElement* e)
@@ -247,6 +468,13 @@ Meta::Contact::Contact(const XERCES_CPP_NAMESPACE::DOMElement* e)
     email = StrXUTF8(emailAttribute).str;
 }
 
+Meta::License::License(const std::string& name, boost::filesystem::path file) :
+    name(name),
+    file(file)
+{
+    // This has to be provided manually since we have another constructor
+}
+
 Meta::License::License(const XERCES_CPP_NAMESPACE::DOMElement* e)
 {
     auto fileAttribute = e->getAttribute(XUTF8Str("file").unicodeForm());
@@ -254,6 +482,13 @@ Meta::License::License(const XERCES_CPP_NAMESPACE::DOMElement* e)
         file = fs::path(StrXUTF8(fileAttribute).str);
     }
     name = StrXUTF8(e->getTextContent()).str;
+}
+
+Meta::Url::Url(const std::string& location, UrlType type) :
+    location(location),
+    type(type)
+{
+    // This has to be provided manually since we have another constructor
 }
 
 Meta::Url::Url(const XERCES_CPP_NAMESPACE::DOMElement* e)

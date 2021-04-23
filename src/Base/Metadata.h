@@ -44,6 +44,8 @@ namespace Base {
          * \brief A person or company representing a point of contact for the package (either author or maintainer).
          */
         struct Contact {
+            Contact() = default;
+            Contact(const std::string &name, const std::string &email);
             explicit Contact(const XERCES_CPP_NAMESPACE::DOMElement* e);
             std::string name; //< Contact name - required
             std::string email; //< Contact email - may be optional
@@ -57,6 +59,8 @@ namespace Base {
          * using the "file" member.
          */
         struct License {
+            License() = default;
+            License(const std::string &name, boost::filesystem::path file);
             explicit License(const XERCES_CPP_NAMESPACE::DOMElement* e);
             std::string name; //< Short name of license, e.g. "LGPL2", "MIT", "Mozilla Public License", etc.
             boost::filesystem::path file; //< Optional path to the license file, relative to the XML file's location
@@ -75,6 +79,8 @@ namespace Base {
          * \brief A URL, including type information (e.g. website, repository, or bugtracker, in package.xml v3)
          */
         struct Url {
+            Url() = default;
+            Url(const std::string &location, UrlType type);
             explicit Url(const XERCES_CPP_NAMESPACE::DOMElement* e);
             std::string location; //< The actual URL, including protocol
             UrlType type; //< What kind of URL this is
@@ -85,6 +91,7 @@ namespace Base {
          * \brief Another package that this package depends on, conflicts with, or replaces
          */
         struct Dependency {
+            Dependency() = default;
             explicit Dependency(const XERCES_CPP_NAMESPACE::DOMElement* e);
             std::string package; //< Required: must exactly match the contents of the "name" element in the referenced package's package.xml file.
             std::string version_lt; //< Optional: The dependency to the package is restricted to versions less than the stated version number.
@@ -114,6 +121,7 @@ namespace Base {
          * for convenient access by client code.
          */
         struct GenericMetadata {
+            GenericMetadata() = default;
             explicit GenericMetadata(const XERCES_CPP_NAMESPACE::DOMElement* e);
             std::string contents; //< The contents of the tag
             std::map<std::string,std::string> attributes; //< The XML attributes of the tag
@@ -157,6 +165,8 @@ namespace Base {
      */
     class BaseExport Metadata {
     public:
+
+        Metadata() = default;
 
         /**
          * Read the data from a file on disk
@@ -229,6 +239,29 @@ namespace Base {
          */
         XERCES_CPP_NAMESPACE::DOMElement* dom() const;
 
+
+        // Setters
+        void setName(const std::string &name);
+        void setVersion(int major, int minor = 0, int patch = 0, const std::string &suffix = std::string());
+        void setDescription(const std::string &description);
+        void addMaintainer(const Meta::Contact &maintainer); 
+        void addLicense(const Meta::License &license);
+        void addUrl(const Meta::Url &url);
+        void addAuthor(const Meta::Contact &author);
+        void addDepend(const Meta::Dependency &dep);
+        void addConflict(const Meta::Dependency& dep);
+        void addReplace(const Meta::Dependency& dep);
+        void addTag(const std::string &tag);
+        void setIcon(const boost::filesystem::path &path);
+        void setClassname(const std::string &name);
+        void addFile(const boost::filesystem::path &path);
+        void addContentItem(const std::string &tag, const Metadata &item);
+
+        /**
+         * Write the metadata to an XML file
+         */
+        void write(const boost::filesystem::path& file) const;
+
     private:
 
         std::string _name;
@@ -253,8 +286,10 @@ namespace Base {
         XERCES_CPP_NAMESPACE::DOMElement* _dom;
         std::shared_ptr<XERCES_CPP_NAMESPACE::XercesDOMParser> _parser;
 
-        void parseVersion3(const XERCES_CPP_NAMESPACE::DOMNode* startNode);
-        void parseContentNodeVersion3(const XERCES_CPP_NAMESPACE::DOMElement* contentNode);
+        void parseVersion1(const XERCES_CPP_NAMESPACE::DOMNode* startNode);
+        void parseContentNodeVersion1(const XERCES_CPP_NAMESPACE::DOMElement* contentNode);
+
+        void appendToElement(XERCES_CPP_NAMESPACE::DOMElement *root) const;
 
     };
 
