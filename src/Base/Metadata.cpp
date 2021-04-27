@@ -62,7 +62,7 @@ Metadata::Metadata(const boost::filesystem::path& metadataFile)
     if (rootTagName != "package")
         throw std::runtime_error("package.xml must contain one, and only one, <package> element.");
 
-    auto formatVersion = XMLString::parseInt(_dom->getAttribute(XUTF8Str("format").unicodeForm()));    
+    auto formatVersion = XMLString::parseInt(_dom->getAttribute(XUTF8Str("format").unicodeForm()));
     switch (formatVersion) {
     case 1:
         parseVersion1(_dom);
@@ -378,16 +378,16 @@ void Metadata::appendToElement(DOMElement * root) const
             addAttribute(element, "email", author.email);
     }
 
-    for (const auto& depend : _depend) 
+    for (const auto& depend : _depend)
         addDependencyNode(root, "depend", depend);
 
-    for (const auto& conflict : _conflict) 
+    for (const auto& conflict : _conflict)
         addDependencyNode(root, "conflict", conflict);
 
-    for (const auto& replace : _replace) 
+    for (const auto& replace : _replace)
         addDependencyNode(root, "replace", replace);
 
-    for (const auto &tag : _tag) 
+    for (const auto &tag : _tag)
         auto element_unused = appendSimpleXMLNode(root, "tag", tag);
 
     appendSimpleXMLNode(root, "icon", _icon.string());

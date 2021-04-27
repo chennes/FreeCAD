@@ -20,8 +20,8 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef BASE_THEMEMANAGER_H 
-#define BASE_THEMEMANAGER_H 
+#ifndef BASE_THEMEMANAGER_H
+#define BASE_THEMEMANAGER_H
 
 #include <vector>
 #include <string>
@@ -40,7 +40,7 @@ namespace Gui {
 
         /**
          * Construct a theme from a directory
-         * 
+         *
          * \param path A path to a mod directory that contains a theme
          * \param metadata The metadata from the package.xml file describing this theme
          */
@@ -49,7 +49,7 @@ namespace Gui {
         ~Theme() = default;
 
         /**
-         * Get the name of the theme 
+         * Get the name of the theme
          */
         std::string name() const;
 
@@ -103,7 +103,7 @@ namespace Gui {
 
         /**
          * Save current settings as a (possibly new) theme
-         * 
+         *
          * If the named theme does not exist, this creates it on disk. If it does exist, this overwrites the original.
          */
         void save(const std::string& name, const std::vector<TemplateFile>& templates);

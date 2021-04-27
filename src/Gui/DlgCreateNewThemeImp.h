@@ -37,9 +37,9 @@ class Ui_DlgCreateNewTheme;
 
 /**
  * \class DlgCreateNewThemeImp
- * 
- * A dialog to request a theme name and a set of theme templates. 
- * 
+ *
+ * A dialog to request a theme name and a set of theme templates.
+ *
  * \author Chris Hennes
  */
 class GuiExport DlgCreateNewThemeImp : public QDialog

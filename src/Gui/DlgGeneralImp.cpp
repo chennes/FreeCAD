@@ -317,12 +317,12 @@ void DlgGeneralImp::recreateThemeMenu()
 
     //: This refers to the "no theme selected" case when choosing a Theme from the menu
     ui->Theme->addItem(QString::fromUtf8("(") + tr("None") + QString::fromUtf8(")"), QString());
-    
+
     for (const auto& theme : themes) {
         ui->Theme->addItem(QString::fromStdString(theme), QString::fromStdString(theme));
     }
     ui->Theme->insertSeparator(ui->Theme->count());
-    
+
     //: For creating a new theme from the current parameter settings
     ui->Theme->addItem(tr("Save as new..."), QString());
 

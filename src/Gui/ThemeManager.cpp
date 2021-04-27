@@ -47,7 +47,7 @@ using namespace xercesc;
 namespace fs = boost::filesystem;
 
 
-Theme::Theme(const fs::path& path, const Base::Metadata& metadata) : 
+Theme::Theme(const fs::path& path, const Base::Metadata& metadata) :
     _path(path), _metadata (metadata)
 {
     if (!fs::exists(_path)) {
@@ -292,7 +292,7 @@ void ThemeManager::save(const std::string& name, const std::vector<TemplateFile>
     auto cfgFilename = savedThemesDirectory / name / (name + ".cfg");
     outputParameterManager.SaveDocument(cfgFilename.string().c_str());
 
-    // Future work: copy any referenced auxilliary files that we recognize
+    // Future work: copy any referenced auxiliary files that we recognize
 }
 
 // Needed until we support only C++20 and above and can use std::string's built-in ends_with()
@@ -351,7 +351,7 @@ std::vector<ThemeManager::TemplateFile> ThemeManager::templateFiles(bool rescan)
             std::copy(localFiles.begin(), localFiles.end(), std::back_inserter(_templateFiles));
         }
     }
-    
+
     return _templateFiles;
 }
 

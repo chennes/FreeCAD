@@ -109,8 +109,8 @@ void DlgPreferencesImp::setupPages()
 }
 
 /**
- * Create the necessary widgets for a new group named \a groupName. Returns a 
- * pointer to the group's QTabWidget: that widget's lifetime is managed by the 
+ * Create the necessary widgets for a new group named \a groupName. Returns a
+ * pointer to the group's QTabWidget: that widget's lifetime is managed by the
  * tabWidgetStack, do not manually deallocate.
  */
 QTabWidget* DlgPreferencesImp::createTabForGroup(const std::string &groupName)
@@ -296,7 +296,7 @@ void DlgPreferencesImp::restoreDefaults()
 }
 
 /**
- * If the dialog is currently showing and the static variable _pages changed, this function 
+ * If the dialog is currently showing and the static variable _pages changed, this function
  * will rescan that list of pages and add any that are new to the current dialog. It will not
  * remove any pages that are no longer in the list, and will not change the user's current
  * active page.
@@ -319,7 +319,7 @@ void DlgPreferencesImp::reloadPages()
             }
         }
 
-        // This is a new tab that wasn't there when we started this instance of the dialog: 
+        // This is a new tab that wasn't there when we started this instance of the dialog:
         if (!tabWidget) {
             tabWidget = createTabForGroup(group.first);
         }
