@@ -187,7 +187,7 @@ void Metadata::setName(const std::string& name)
 void Metadata::setVersion(int major, int minor, int patch, const std::string& suffix)
 {
     std::stringstream s;
-    s << major << "." << major << "." << minor << "." << patch << suffix;
+    s << major << "." << minor << "." << patch << suffix;
     _version = s.str();
 }
 
@@ -298,22 +298,43 @@ void Metadata::write(const boost::filesystem::path& file) const
 
     DOMDocument* doc = impl->createDocument(0, XUTF8Str("package").unicodeForm(), 0);
     DOMElement* root = doc->getDocumentElement();
-    root->setAttribute(XUTF8Str("version").unicodeForm(), XUTF8Str("1").unicodeForm());
+    root->setAttribute(XUTF8Str("format").unicodeForm(), XUTF8Str("1").unicodeForm());
 
     appendToElement(root);
 
     DOMLSSerializer* theSerializer = ((DOMImplementationLS*)impl)->createLSSerializer();
-    if (theSerializer->getDomConfig()->canSetParameter(XMLUni::fgDOMWRTFormatPrettyPrint, true))
-        theSerializer->getDomConfig()->setParameter(XMLUni::fgDOMWRTFormatPrettyPrint, true);
+    DOMConfiguration* config = theSerializer->getDomConfig();
+    if (config->canSetParameter(XMLUni::fgDOMWRTFormatPrettyPrint, true))
+        config->setParameter(XMLUni::fgDOMWRTFormatPrettyPrint, true);
 
-    XMLFormatTarget* myFormTarget = new LocalFileFormatTarget(file.string().c_str());
-    DOMLSOutput* theOutput = ((DOMImplementationLS*)impl)->createLSOutput();
-    theOutput->setByteStream(myFormTarget);            
-    theSerializer->write(root, theOutput);
+    // set feature if the serializer supports the feature/mode
+    if (config->canSetParameter(XMLUni::fgDOMWRTSplitCdataSections, true))
+        config->setParameter(XMLUni::fgDOMWRTSplitCdataSections, true);
 
-    theOutput->release();
-    theSerializer->release();
-    delete myFormTarget;
+    if (config->canSetParameter(XMLUni::fgDOMWRTDiscardDefaultContent, true))
+        config->setParameter(XMLUni::fgDOMWRTDiscardDefaultContent, true);
+
+    try {
+        XMLFormatTarget* myFormTarget = new LocalFileFormatTarget(file.string().c_str());
+        DOMLSOutput* theOutput = ((DOMImplementationLS*)impl)->createLSOutput();
+
+        theOutput->setByteStream(myFormTarget);
+        theSerializer->write(doc, theOutput);
+
+        theOutput->release();
+        theSerializer->release();
+        delete myFormTarget;
+    }
+    catch(const XMLException& toCatch) {
+        char* message = XMLString::transcode(toCatch.getMessage());
+        THROWM(Base::RuntimeError, message); // This is leaky
+        XMLString::release(&message);
+    }
+    catch (const DOMException& toCatch) {
+        char* message = XMLString::transcode(toCatch.msg);
+        THROWM(Base::RuntimeError, message); // This is leaky
+        XMLString::release(&message);
+    }
 
     doc->release();
 }
@@ -382,13 +403,15 @@ void Metadata::appendToElement(DOMElement * root) const
             addAttribute(element, attr.first, attr.second);
     }
 
-    auto doc = root->getOwnerDocument();
-    DOMElement* contentRootElement = doc->createElement(XUTF8Str("content").unicodeForm());
-    root->appendChild(contentRootElement);
-    for (const auto& content : _content) {
-        DOMElement* contentElement = doc->createElement(XUTF8Str(content.first.c_str()).unicodeForm());
-        contentRootElement->appendChild(contentElement);
-        content.second.appendToElement(contentElement);
+    if (!_content.empty()) {
+        auto doc = root->getOwnerDocument();
+        DOMElement* contentRootElement = doc->createElement(XUTF8Str("content").unicodeForm());
+        root->appendChild(contentRootElement);
+        for (const auto& content : _content) {
+            DOMElement* contentElement = doc->createElement(XUTF8Str(content.first.c_str()).unicodeForm());
+            contentRootElement->appendChild(contentElement);
+            content.second.appendToElement(contentElement);
+        }
     }
 }
 
