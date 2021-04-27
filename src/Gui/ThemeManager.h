@@ -31,98 +31,100 @@
 
 namespace Gui {
 
-	/**
-	 * \class Theme A collection of user preferences stored in files on disk
-	 */
-	class Theme {
+    /**
+     * \class Theme A collection of user preferences stored in files on disk
+     */
+    class Theme {
 
-	public:
+    public:
 
-		/**
-		 * Construct a theme from a directory
-		 * 
-		 * \param path A path to a mod directory that contains a theme
-		 * \param metadata The metadata from the package.xml file describing this theme
-		 */
-		Theme(const boost::filesystem::path& path, const Base::Metadata &metadata);
+        /**
+         * Construct a theme from a directory
+         * 
+         * \param path A path to a mod directory that contains a theme
+         * \param metadata The metadata from the package.xml file describing this theme
+         */
+        Theme(const boost::filesystem::path& path, const Base::Metadata &metadata);
 
-		~Theme() = default;
+        ~Theme() = default;
 
-		/**
-		 * Get the name of the theme 
-		 */
-		std::string name() const;
+        /**
+         * Get the name of the theme 
+         */
+        std::string name() const;
 
-		/**
-		 * Apply the theme over the top of the current preferences set
-		 */
-		void apply() const;
+        /**
+         * Apply the theme over the top of the current preferences set
+         * \returns True if the theme was applied, or false if not
+         */
+        bool apply() const;
 
-	private:
+    private:
 
-		boost::filesystem::path _path;
-		Base::Metadata _metadata;
+        void applyConfigChanges() const;
 
-	};
+        boost::filesystem::path _path;
+        Base::Metadata _metadata;
+
+    };
 
 
 
 
-	/**
-	 * \class ThemeManager handles storable and loadable collections of user preferences
-	 */
-	class ThemeManager {
-	public:
-		explicit ThemeManager(const std::vector<boost::filesystem::path> &themePaths);
-		~ThemeManager() = default;
+    /**
+     * \class ThemeManager handles storable and loadable collections of user preferences
+     */
+    class ThemeManager {
+    public:
+        ThemeManager();
+        ~ThemeManager() = default;
 
-		/**
-		 * Rescan the theme directory and update the available themes
-		 */
-		void rescan();
+        /**
+         * Rescan the theme directory and update the available themes
+         */
+        void rescan();
 
-		/**
-		 * Get an alphabetical list of names of all installed themes
-		 */
-		std::vector<std::string> themeNames() const;
+        /**
+         * Get an alphabetical list of names of all installed themes
+         */
+        std::vector<std::string> themeNames() const;
 
-		/**
-		 * Get a list of installed themes
-		 */
-		std::vector<const Theme *> themes() const;
+        /**
+         * Apply the named theme
+         * \return True if the theme was applied, or false if it was not
+         */
+        bool apply(const std::string & themeName) const;
 
-		/**
-		 * Apply the named theme
-		 */
-		void apply(const std::string & themeName) const;
+        struct TemplateFile {
+            std::string group;
+            std::string name;
+            boost::filesystem::path path;
+        };
 
-		/**
-		 * Apply the referenced theme
-		 */
-		void apply(const Theme& theme) const;
+        /**
+         * Save current settings as a (possibly new) theme
+         * 
+         * If the named theme does not exist, this creates it on disk. If it does exist, this overwrites the original.
+         */
+        void save(const std::string& name, const std::vector<TemplateFile>& templates);
 
-		/**
-		 * Save current settings as a (possibly new) theme
-		 * 
-		 * If the named theme does not exist, this creates it on disk. If it does exist, this overwrites the original.
-		 */
-		void save(const std::string& name, const std::vector<boost::filesystem::path>& templates);
 
-		struct templateFile {
-			std::string group;
-			std::string name;
-			boost::filesystem::path path;
-		};
+        std::vector<TemplateFile> templateFiles(bool rescan = false);
 
-		std::vector<templateFile> templateFiles(bool rescan = false);
+    private:
 
-	private:
-		std::vector<boost::filesystem::path> _themePaths;
-		std::vector<templateFile> _templateFiles;
-		std::map<std::string, Theme> _themes;
-		mutable std::mutex _mutex;
+        void FindThemesInPackage(const boost::filesystem::path& mod);
 
-	};
+        void BackupCurrentConfig() const;
+
+        void DeleteOldBackups() const;
+
+        std::vector<boost::filesystem::path> _themePaths;
+        std::vector<TemplateFile> _templateFiles;
+        std::map<std::string, Theme> _themes;
+        mutable std::mutex _mutex;
+
+    };
 
 }
 

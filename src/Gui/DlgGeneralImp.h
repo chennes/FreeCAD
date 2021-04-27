@@ -53,9 +53,13 @@ protected:
 
 protected Q_SLOTS:
     void themeSelectionChanged(int index);
+    void applyThemeClicked();
+    void recreateThemeMenu();
 
 private:
     void setRecentFileSize();
+    void saveAsNewTheme();
+    void setupUIForNormalSelection();
 
 private:
     std::unique_ptr<Ui_DlgGeneral> ui;

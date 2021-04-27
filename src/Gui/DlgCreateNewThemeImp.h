@@ -48,21 +48,21 @@ class GuiExport DlgCreateNewThemeImp : public QDialog
 
 public:
 
-  DlgCreateNewThemeImp(QWidget* parent = nullptr);
-  ~DlgCreateNewThemeImp();
+    DlgCreateNewThemeImp(QWidget* parent = nullptr);
+    ~DlgCreateNewThemeImp();
 
-  void addThemeTemplate(const std::string &groupName, const std::string &name, bool checkedByDefault);
+    void addThemeTemplate(const std::string &groupName, const std::string &name, bool checkedByDefault);
 
-  std::vector<std::pair<std::string, std::string>> selectedTemplates() const;
-  std::string themeName() const;
+    std::vector<std::pair<std::string, std::string>> selectedTemplates() const;
+    std::string themeName() const;
 
 protected Q_SLOTS:
 
-	void onItemChanged(QTreeWidgetItem* item, int column);
+    void onItemChanged(QTreeWidgetItem* item, int column);
 
 private:
-  std::unique_ptr<Ui_DlgCreateNewTheme> ui;
-  std::map<std::string, QTreeWidgetItem*> _groups;
+    std::unique_ptr<Ui_DlgCreateNewTheme> ui;
+    std::map<std::string, QTreeWidgetItem*> _groups;
 };
 
 } // namespace Dialog

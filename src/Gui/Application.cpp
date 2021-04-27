@@ -163,10 +163,7 @@ struct ApplicationP
             macroMngr = nullptr;
 
         // Create the Theme Manager
-        auto modPath = boost::filesystem::path(App::Application::getUserAppDataDir()) / "Mod";
-        auto resourcePath = boost::filesystem::path(App::Application::getResourceDir()) / "Themes";
-        std::vector<boost::filesystem::path> paths{resourcePath, modPath};
-        themeManager = new ThemeManager(paths);
+        themeManager = new ThemeManager();
     }
 
     ~ApplicationP()

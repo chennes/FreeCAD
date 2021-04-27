@@ -33,12 +33,14 @@
 #include "ui_DlgGeneral.h"
 #include "Action.h"
 #include "Application.h"
+#include "Command.h"
 #include "DockWindowManager.h"
 #include "MainWindow.h"
 #include "PrefWidgets.h"
 #include "PythonConsole.h"
 #include "Language/Translator.h"
 #include "Gui/ThemeManager.h"
+#include "DlgPreferencesImp.h"
 
 #include "DlgCreateNewThemeImp.h"
 
@@ -86,17 +88,10 @@ DlgGeneralImp::DlgGeneralImp( QWidget* parent )
             ui->AutoloadModuleCombo->addItem(px, it.key(), QVariant(it.value()));
     }
 
-    // Populate the Themes menu
-    //auto themeNames = App::GetApplication().GetThemeManager()->themeNames();
-    ui->Theme->clear();
-    auto themes = Application::Instance->themeManager()->themeNames();
-    for (const auto& theme : themes) {
-        ui->Theme->addItem(QString::fromStdString(theme));
-    }
-    ui->Theme->insertSeparator(themes.size());
-    ui->Theme->addItem(tr("Create new..."));
+    recreateThemeMenu();
+
     connect(ui->Theme, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &DlgGeneralImp::themeSelectionChanged);
-    
+    connect(ui->ApplyTheme, &QPushButton::clicked, this, &DlgGeneralImp::applyThemeClicked);
 }
 
 /**
@@ -314,18 +309,125 @@ void DlgGeneralImp::changeEvent(QEvent *e)
     }
 }
 
+void DlgGeneralImp::recreateThemeMenu()
+{
+    // Populate the Themes menu
+    ui->Theme->clear();
+    auto themes = Application::Instance->themeManager()->themeNames();
+
+    //: This refers to the "no theme selected" case when choosing a Theme from the menu
+    ui->Theme->addItem(QString::fromUtf8("(") + tr("None") + QString::fromUtf8(")"), QString());
+    
+    for (const auto& theme : themes) {
+        ui->Theme->addItem(QString::fromStdString(theme), QString::fromStdString(theme));
+    }
+    ui->Theme->insertSeparator(ui->Theme->count());
+    
+    //: For creating a new theme from the current parameter settings
+    ui->Theme->addItem(tr("Save as new..."), QString());
+
+    auto generalGroup = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/General");
+    auto selectedTheme = generalGroup->GetASCII("LastThemeApplied", "");
+    auto themeModified = generalGroup->GetBool("ThemeModified", false);
+
+    if (selectedTheme.empty()) {
+        ui->Theme->setCurrentIndex(0);
+        ui->ApplyTheme->setEnabled(false);
+    }
+    else {
+        auto qName = QString::fromStdString(selectedTheme);
+        ui->Theme->setCurrentIndex(ui->Theme->findText(qName));
+        if (themeModified) {
+            // Modify the displayed string, but NOT the underlying user data, which must remain the theme name
+            ui->Theme->setCurrentText(qName + QString::fromUtf8("(") + tr("Modified") + QString::fromUtf8(")"));
+        }
+        ui->ApplyTheme->setEnabled(true);
+    }
+}
+
 void DlgGeneralImp::themeSelectionChanged(int index)
 {
-    // The last item in the list is "Save as new..."
-    if (index == ui->Theme->count() - 1) {
+    if (index == 0) // "(None)"
+        ui->ApplyTheme->setEnabled(false);
+    else if (index == ui->Theme->count() - 1)
+        saveAsNewTheme();
+    else
+        setupUIForNormalSelection();
+}
 
-        std::unique_ptr<DlgCreateNewThemeImp> newThemeDialog = std::make_unique<DlgCreateNewThemeImp>(this);
+void DlgGeneralImp::saveAsNewTheme()
+{
+    // Create and run a modal New Theme dialog box
+    std::unique_ptr<DlgCreateNewThemeImp> newThemeDialog = std::make_unique<DlgCreateNewThemeImp>(this);
+    auto themeTemplates = Application::Instance->themeManager()->templateFiles();
+    for (const auto& t : themeTemplates)
+        newThemeDialog->addThemeTemplate(t.group, t.name, true);
+    auto result = newThemeDialog->exec();
 
-        auto themeTemplates = Application::Instance->themeManager()->templateFiles();
-        for (const auto& t : themeTemplates)
-            newThemeDialog->addThemeTemplate(t.group, t.name, true);
-        newThemeDialog->exec();
+    // Check the modal dialog's return status
+    if (result == QDialog::Accepted) {
+        auto selection = newThemeDialog->selectedTemplates();
+        std::vector<ThemeManager::TemplateFile> selectedTemplates;
+        std::copy_if(themeTemplates.begin(), themeTemplates.end(), std::back_inserter(selectedTemplates), [selection](ThemeManager::TemplateFile& t) {
+            for (const auto& item : selection)
+                if (item.first == t.group && item.second == t.name)
+                    return true;
+            return false;
+            });
+        auto themeName = newThemeDialog->themeName();
+        Application::Instance->themeManager()->save(themeName, selectedTemplates);
+        Application::Instance->themeManager()->rescan();
 
+        const QSignalBlocker blocker(ui->Theme);
+        auto qName = QString::fromStdString(themeName);
+        ui->Theme->insertItem(ui->Theme->count() - 2, qName);
+        ui->Theme->setCurrentIndex(ui->Theme->findText(qName));
+        ui->ApplyTheme->setText(tr("Reapply"));
+        ui->ApplyTheme->setEnabled(true);
+
+        auto generalGroup = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/General");
+        generalGroup->SetASCII("LastThemeApplied", themeName.c_str());
+        generalGroup->SetBool("ThemeModified", false);
+    }
+    else {
+        // Dialog was rejected: select the last-chosen theme, or the "(None)" option if there isn't one
+        auto generalGroup = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/General");
+        auto currentTheme = generalGroup->GetASCII("LastThemeApplied", "");
+        if (currentTheme.empty()) {
+            ui->Theme->setCurrentIndex(0); // "(None)"
+            ui->ApplyTheme->setEnabled(false);
+        }
+        else {
+            ui->Theme->setCurrentIndex(ui->Theme->findText(QString::fromStdString(currentTheme)));
+            ui->ApplyTheme->setText(tr("Reapply"));
+            ui->ApplyTheme->setEnabled(true);
+        }
+    }
+}
+
+void DlgGeneralImp::setupUIForNormalSelection()
+{
+    ui->ApplyTheme->setEnabled(true);
+    auto generalGroup = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/General");
+    auto currentTheme = generalGroup->GetASCII("LastThemeApplied", "");
+    if (QString::fromStdString(currentTheme) == ui->Theme->currentData().toString())
+        ui->ApplyTheme->setText(tr("Reapply"));
+    else
+        ui->ApplyTheme->setText(tr("Apply"));
+}
+
+void DlgGeneralImp::applyThemeClicked()
+{
+    auto selectedTheme = ui->Theme->currentData().toString().toStdString();
+
+    if (Application::Instance->themeManager()->apply(selectedTheme)) {
+        auto generalGroup = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/General");
+        generalGroup->SetASCII("LastThemeApplied", selectedTheme.c_str());
+        generalGroup->SetBool("ThemeModified", false);
+
+        auto parentDialog = qobject_cast<DlgPreferencesImp*> (this->window());
+        if (parentDialog)
+            parentDialog->reload();
     }
 }
 
