@@ -678,7 +678,7 @@ Meta::Url::Url(const XERCES_CPP_NAMESPACE::DOMElement* e)
     else if (typeAttribute == "documentation")
         type = UrlType::documentation;
 
-    if (type == UrlType::repository) 
+    if (type == UrlType::repository)
         branch = StrXUTF8(e->getAttribute(XUTF8Str("branch").unicodeForm())).str;
 
     location = StrXUTF8(e->getTextContent()).str;
