@@ -53,19 +53,25 @@ translate = FreeCAD.Qt.translate
 
 show_javascript_console_output = False
 
-try:
-    from PySide2.QtWebEngineWidgets import *
+pref = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Addons")
+disableWebengine = pref.GetBool("DisableQtWebEngine", False)
 
-    HAS_QTWEBENGINE = True
-except Exception:
-    FreeCAD.Console.PrintWarning(
-        translate(
-            "AddonsInstaller",
-            "Addon Manager Warning: Could not import QtWebEngineWidgets, it seems to be missing from your system. Please use your system's package manager to install the python3-pyside2.qtwebengine* and python3-pyside2.qtwebchannel packages, and if possible alert your package creator to the missing dependency. Display of package README will be limited until this dependency is resolved.",
-        )
-        + "\n"
-    )
+if disableWebengine:
     HAS_QTWEBENGINE = False
+else:
+    try:
+        from PySide2.QtWebEngineWidgets import *
+
+        HAS_QTWEBENGINE = True
+    except Exception:
+        FreeCAD.Console.PrintWarning(
+            translate(
+                "AddonsInstaller",
+                "Addon Manager Warning: Could not import QtWebEngineWidgets, it seems to be missing from your system. Please use your system's package manager to install the python3-pyside2.qtwebengine* and python3-pyside2.qtwebchannel packages, and if possible alert your package creator to the missing dependency. Display of package README will be limited until this dependency is resolved.",
+            )
+            + "\n"
+        )
+        HAS_QTWEBENGINE = False
 
 
 class PackageDetails(QWidget):
