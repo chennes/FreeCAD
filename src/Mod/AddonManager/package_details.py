@@ -58,6 +58,7 @@ disableWebengine = pref.GetBool("DisableQtWebEngine", False)
 
 if disableWebengine:
     HAS_QTWEBENGINE = False
+    FreeCAD.Console.PrintMessage(translate("AddonsInstaller", "Addon Manager: QtWebEngine disabled by user preference.") + "\n")
 else:
     try:
         from PySide2.QtWebEngineWidgets import *
