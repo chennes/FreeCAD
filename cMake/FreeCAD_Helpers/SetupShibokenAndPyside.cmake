@@ -133,6 +133,12 @@ macro(SetupShibokenAndPyside)
             RESULT_VARIABLE FAILURE
             OUTPUT_VARIABLE Shiboken_VERSION
         )
+
+        if(FAILURE)
+            message("=================================\n"
+                    "shiboken Python module not found.\n"
+                    "=================================\n")
+        endif()
     endif()
 
     # If PySide cannot be found the build option will be set to OFF
