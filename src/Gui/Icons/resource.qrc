@@ -273,4 +273,10 @@
     <qresource prefix="/doc">
         <file alias="CONTRIBUTORS">../../Doc/CONTRIBUTORS</file>
     </qresource>
+    <qresource prefix="/fonts">
+        <file>URWGothic-Book.otf</file>
+        <file>URWGothic-BookOblique.otf</file>
+        <file>URWGothic-Demi.otf</file>
+        <file>URWGothic-DemiOblique.otf</file>
+    </qresource>
 </RCC>

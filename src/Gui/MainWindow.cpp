@@ -1727,6 +1727,14 @@ QPixmap MainWindow::splashImage() const
         }
     }
 
+    // Make sure we know at least one font for sure: technically FreeCAD's official logo font is
+    // Evolventa, but that font's licensing is a little obscure. It's based on URW Gothic, which is
+    // available via the Open Font License so can be distributed embedded within the app.
+    auto id = QFontDatabase::addApplicationFont(QString::fromUtf8(":/fonts/URWGothic-Demi.otf"));
+    if (id == -1) {
+        Base::Console().Log("Failed to load URWGothic-Demi.otf\n");
+    }
+
     // include application name and version number
     std::map<std::string,std::string>::const_iterator tc = App::Application::Config().find("SplashInfoColor");
     if (tc != App::Application::Config().end()) {
@@ -1756,6 +1764,9 @@ QPixmap MainWindow::splashImage() const
             QFont font = painter.font();
             if (font.fromString(fontFamily))
                 painter.setFont(font);
+        } else {
+            QFont freecadOfficialFont (QString::fromUtf8("URWGothic-Demi"), 20.0, QFont::Weight::DemiBold);
+            painter.setFont(freecadOfficialFont);
         }
 
         QFont fontExe = painter.font();
