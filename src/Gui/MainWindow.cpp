@@ -1697,7 +1697,7 @@ QPixmap MainWindow::aboutImage() const
 QPixmap MainWindow::splashImage() const
 {
     // search in the UserAppData dir as very first
-    QPixmap splash_image;
+    QImage splash_image;
     QFileInfo fi(QString::fromLatin1("images:splash_image.png"));
     if (fi.isFile() && fi.exists())
         splash_image.load(fi.filePath(), "PNG");
@@ -1719,21 +1719,21 @@ QPixmap MainWindow::splashImage() const
         if (qApp->devicePixelRatio() > 1.0) {
             // For HiDPI screens, we have a double-resolution version of the splash image
             splash_path += "2x";
-            splash_image = Gui::BitmapFactory().pixmap(splash_path.c_str());
+            splash_image = Gui::BitmapFactory().pixmap(splash_path.c_str()).toImage().convertToFormat(QImage::Format_ARGB32_Premultiplied);
             splash_image.setDevicePixelRatio(2.0);
         }
         else {
-            splash_image = Gui::BitmapFactory().pixmap(splash_path.c_str());
+            splash_image = Gui::BitmapFactory().pixmap(splash_path.c_str()).toImage().convertToFormat(QImage::Format_ARGB32_Premultiplied);
         }
     }
 
     // Make sure we know at least one font for sure: technically FreeCAD's official logo font is
     // Evolventa, but that font's licensing is a little obscure. It's based on URW Gothic, which is
     // available via the Open Font License so can be distributed embedded within the app.
-    auto id = QFontDatabase::addApplicationFont(QString::fromUtf8(":/fonts/URWGothic-Demi.otf"));
-    if (id == -1) {
-        Base::Console().Log("Failed to load URWGothic-Demi.otf\n");
-    }
+    QFontDatabase::addApplicationFont(QString::fromUtf8(":/fonts/URWGothic-Book.otf"));
+    QFontDatabase::addApplicationFont(QString::fromUtf8(":/fonts/URWGothic-BookOblique.otf"));
+    QFontDatabase::addApplicationFont(QString::fromUtf8(":/fonts/URWGothic-Demi.otf"));
+    QFontDatabase::addApplicationFont(QString::fromUtf8(":/fonts/URWGothic-DemiOblique.otf"));
 
     // include application name and version number
     std::map<std::string,std::string>::const_iterator tc = App::Application::Config().find("SplashInfoColor");
@@ -1765,8 +1765,12 @@ QPixmap MainWindow::splashImage() const
             if (font.fromString(fontFamily))
                 painter.setFont(font);
         } else {
-            QFont freecadOfficialFont (QString::fromUtf8("URWGothic-Demi"), 20.0, QFont::Weight::DemiBold);
+            QFont freecadOfficialFont (QString::fromUtf8("URW Gothic"), 20.0, QFont::Bold);
+            freecadOfficialFont.setStyleStrategy(QFont::NoAntialias);
+            freecadOfficialFont.setHintingPreference(QFont::PreferFullHinting);
             painter.setFont(freecadOfficialFont);
+            //painter.setRenderHint(QPainter::TextAntialiasing, true);
+            //painter.setRenderHint(QPainter::Antialiasing, true);
         }
 
         QFont fontExe = painter.font();
@@ -1805,7 +1809,7 @@ QPixmap MainWindow::splashImage() const
         }
     }
 
-    return splash_image;
+    return QPixmap::fromImage(splash_image);
 }
 
 /**
