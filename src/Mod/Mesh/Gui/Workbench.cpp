@@ -24,6 +24,7 @@
 #ifndef _PreComp_
 # include <QGroupBox>
 # include <QLabel>
+# include <QCoreApplication>
 #endif
 
 #include <Gui/Application.h>
@@ -69,7 +70,9 @@ public:
     MeshInfoWatcher() : TaskWatcher(nullptr)
     {
         labelPoints = new QLabel();
-        labelPoints->setText(tr("Number of points:"));
+        auto theLabel = QCoreApplication::translate("MeshInfoWatcher", "Number of points:");
+        std::string labelString = theLabel.toStdString();
+        labelPoints->setText(theLabel);
 
         labelFacets = new QLabel();
         labelFacets->setText(tr("Number of facets:"));
