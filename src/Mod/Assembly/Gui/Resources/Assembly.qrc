@@ -1,0 +1,7 @@
+<RCC>
+    <qresource>
+        <file>icons/preferences-assembly.svg</file>
+        <file>panels/dummy.ui</file>
+        <file>preferences/Assembly.ui</file>
+    </qresource>
+</RCC>
