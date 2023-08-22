@@ -47,6 +47,7 @@ class AssemblyWorkbench(Workbench):
     "Assembly workbench"
 
     def __init__(self):
+        print("Loading Assembly workbench...")
         self.__class__.Icon = (
             FreeCAD.getResourceDir() + "Mod/Assembly/Resources/icons/AssemblyWorkbench.svg"
         )
@@ -72,8 +73,6 @@ class AssemblyWorkbench(Workbench):
 
         # FreeCADGui.addPreferencePage(PathPreferencesPathJob.JobPreferencesPage, QT_TRANSLATE_NOOP("QObject", "Path"))
 
-        # Path.GuiInit.Startup()
-
         # build commands list
         cmdlist = ["Assembly_CreateAssembly"]
 
@@ -88,9 +87,6 @@ class AssemblyWorkbench(Workbench):
         # from Preferences import preferences
         print("Assembly workbench loaded")
 
-    def GetClassName(self):
-        return "Gui::AssemblyWorkbench"
-
     def Activated(self):
         # update the translation engine
         FreeCADGui.updateLocale()
@@ -104,4 +100,4 @@ class AssemblyWorkbench(Workbench):
 
 Gui.addWorkbench(AssemblyWorkbench())
 
-FreeCAD.addImportType()
+# FreeCAD.addImportType()
