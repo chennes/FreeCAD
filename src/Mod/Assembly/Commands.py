@@ -36,33 +36,31 @@ __author__ = "Ondsel"
 __url__ = "https://www.freecad.org"
 
 
-class _dummy:
-    "the dummy command for initial implementation"
+class CommandCreateAssembly:
+    # Command creating a new assembly object.
 
     def __init__(self):
-        self.obj = None
-        self.sub = []
-        self.active = False
+        pass
 
     def GetResources(self):
         return {
-            "Pixmap": "Assembly_Dummy",
-            "MenuText": QT_TRANSLATE_NOOP("Assembly_Dummy", "dummy"),
-            "Accel": "A, D",
+            "Pixmap": "AssemblyWorkbench",
+            "MenuText": QT_TRANSLATE_NOOP("Assembly_CreateAssembly", "Create Assembly"),
+            "Accel": "A",
             "ToolTip": QT_TRANSLATE_NOOP(
-                "Assembly_Dummy", "dummy"
+                "Assembly_CreateAssembly", "Create an assembly object in the current document."
             ),
             "CmdType": "ForEdit",
         }
 
     def IsActive(self):
-        return True
+        return FreeCAD.ActiveDocument is not None
 
     def Activated(self):
-        print ('did the dummy command')
+        print ('did the create assembly command')
 
 
 if FreeCAD.GuiUp:
-    FreeCADGui.addCommand("Assembly_Dummy", _dummy())
+    FreeCADGui.addCommand("Assembly_CreateAssembly", CommandCreateAssembly())
 
 

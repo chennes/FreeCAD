@@ -75,8 +75,7 @@ class AssemblyWorkbench(Workbench):
         # Path.GuiInit.Startup()
 
         # build commands list
-        #cmdlist = ["Assembly_Dummy"]
-        cmdlist = []
+        cmdlist = ["Assembly_CreateAssembly"]
 
         self.appendToolbar(QT_TRANSLATE_NOOP("Workbench", "Assembly"), cmdlist)
 
