@@ -1,8 +1,8 @@
 
-set (Assembly_TR_QRC ${CMAKE_CURRENT_BINARY_DIR}/Resources/Assembly_translation.qrc)
-qt_find_and_add_translation(QM_SRCS "Resources/translations/*_*.ts"
-    ${CMAKE_CURRENT_BINARY_DIR}/Resources/translations)
-qt_create_resource_file(${Assembly_TR_QRC} ${QM_SRCS})
+#set (Assembly_TR_QRC ${CMAKE_CURRENT_BINARY_DIR}/Resources/Assembly_translation.qrc)
+#qt_find_and_add_translation(QM_SRCS "Resources/translations/*_*.ts"
+#    ${CMAKE_CURRENT_BINARY_DIR}/Resources/translations)
+#qt_create_resource_file(${Assembly_TR_QRC} ${QM_SRCS})
 qt_add_resources(AssemblyResource_SRCS Resources/Assembly.qrc ${Assembly_TR_QRC})
 
 # SOURCE_GROUP("Resources" FILES ${PathResource_SRCS})
