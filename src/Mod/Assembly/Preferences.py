@@ -21,9 +21,17 @@
 # ***************************************************************************
 
 import FreeCAD
-import Path
-import glob
-import os
+import FreeCADGui
 
 def preferences():
     return FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/Assembly")
+
+class PreferencesPage:
+    def __init__(self, parent=None):
+        self.form = FreeCADGui.PySideUic.loadUi(":preferences/Assembly.ui")
+
+    def saveSettings(self):
+        pass
+
+    def loadSettings(self):
+        pass

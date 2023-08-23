@@ -63,15 +63,15 @@ class AssemblyWorkbench(Workbench):
 
         # load the builtin modules
         from PySide import QtCore, QtGui
+        from PySide.QtCore import QT_TRANSLATE_NOOP
+        import Commands
+        from Preferences import PreferencesPage
+        # from Preferences import preferences
 
         FreeCADGui.addLanguagePath(":/translations")
         FreeCADGui.addIconPath(":/icons")
 
-        from PySide.QtCore import QT_TRANSLATE_NOOP
-
-        import Commands
-
-        # FreeCADGui.addPreferencePage(PathPreferencesPathJob.JobPreferencesPage, QT_TRANSLATE_NOOP("QObject", "Path"))
+        FreeCADGui.addPreferencePage(PreferencesPage, QT_TRANSLATE_NOOP("QObject", "Assembly"))
 
         # build commands list
         cmdlist = ["Assembly_CreateAssembly"]
@@ -84,7 +84,7 @@ class AssemblyWorkbench(Workbench):
             + ["Separator"],
         )
 
-        # from Preferences import preferences
+
         print("Assembly workbench loaded")
 
     def Activated(self):
