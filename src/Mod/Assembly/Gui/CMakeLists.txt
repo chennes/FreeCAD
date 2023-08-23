@@ -5,41 +5,26 @@
 #qt_create_resource_file(${Assembly_TR_QRC} ${QM_SRCS})
 qt_add_resources(AssemblyResource_SRCS Resources/Assembly.qrc ${Assembly_TR_QRC})
 
-# SOURCE_GROUP("Resources" FILES ${PathResource_SRCS})
+SOURCE_GROUP("Resources" FILES ${AssemblyResource_SRCS})
 
-# # set(PathGui_UIC_SRCS
+# # set(AssemblyGui_UIC_SRCS
 # #     DlgSettingsPathColor.ui
 # #     TaskDlgPathCompound.ui
 # #     DlgProcessorChooser.ui
 # # )
 
-# SET(PathGui_SRCS_Module
-#     Command.cpp
-#     AppPathGui.cpp
-#     AppPathGuiPy.cpp
-#     Resources/Path.qrc
-#     PreCompiled.cpp
-#     PreCompiled.h
-#     DlgSettingsPathColor.ui
-#     DlgSettingsPathColor.cpp
-#     DlgSettingsPathColor.h
-#     TaskDlgPathCompound.ui
-#     TaskDlgPathCompound.cpp
-#     TaskDlgPathCompound.h
-#     DlgProcessorChooser.ui
-#     DlgProcessorChooser.cpp
-#     DlgProcessorChooser.h
-# )
+SET(AssemblyGui_SRCS_Module
+    Resources/Assembly.qrc
+)
 
-# SOURCE_GROUP("Module" FILES ${PathGui_SRCS_Module})
+SOURCE_GROUP("Module" FILES ${AssemblyGui_SRCS_Module})
 
 
-# SET(AssemblyGui_SRCS
-#     ${PathResource_SRCS}
-#     ${PathGui_UIC_HDRS}
-#     ${PathGui_SRCS_Module}
-#     ${PathGui_SRCS_ViewProvider}
-# )
+SET(AssemblyGui_SRCS
+    ${AssemblyResource_SRCS}
+    ${AssemblyGui_UIC_HDRS}
+    ${AssemblyGui_SRCS_Module}
+)
 
 
 SET(AssemblyGuiIcon_SVG
@@ -47,9 +32,9 @@ SET(AssemblyGuiIcon_SVG
 )
 
 add_library(AssemblyGui SHARED ${AssemblyGui_SRCS} ${AssemblyGuiIcon_SVG})
-target_link_libraries(AssemblyGui ${PathGui_LIBS})
+target_link_libraries(AssemblyGui ${AssemblyGui_LIBS})
 
-SET_BIN_DIR(AssemblyGui AssemblyGui /Mod/Path)
+SET_BIN_DIR(AssemblyGui AssemblyGui /Mod/Assembly)
 SET_PYTHON_PREFIX_SUFFIX(AssemblyGui)
 
 fc_copy_sources(AssemblyGui "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_DATADIR}/Mod/Assembly" ${AssemblyGuiIcon_SVG})
