@@ -22,8 +22,9 @@
 
 import TestApp
 
-from Tests.TestCore import TestCore
+from AssemblyTests.TestCore import TestCore
 
 
 # dummy usage to get flake8 and lgtm quiet
 False if TestCore.__name__ else True
+False if TestApp.__name__ else True

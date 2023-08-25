@@ -27,14 +27,14 @@ SET(AssemblyScripts_SRCS
 )
 
 
-SET(Tests_SRCS
-    Tests/__init__.py
-    Tests/TestCore.py
+SET(AssemblyTests_SRCS
+    AssemblyTests/__init__.py
+    AssemblyTests/TestCore.py
 )
 
 
 SET(all_files
-    ${Tests_SRCS}
+    ${AssemblyTests_SRCS}
     ${AssemblyScripts_SRCS}
 )
 
@@ -44,7 +44,7 @@ ADD_CUSTOM_TARGET(AssemblyScripts ALL
 
 SET(test_files
     ${Assembly_Scripts}
-    ${Tests_SRCS}
+    ${AssemblyTests_SRCS}
 )
 
 ADD_CUSTOM_TARGET(AssemblyTests ALL
