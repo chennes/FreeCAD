@@ -20,16 +20,16 @@
 # *                                                                         *
 # ***************************************************************************
 
-import FreeCAD
+import FreeCAD as App
 
 from PySide.QtCore import QT_TRANSLATE_NOOP
 
-if FreeCAD.GuiUp:
-    import FreeCADGui
+if App.GuiUp:
+    import FreeCADGui as Gui
     from PySide import QtCore
     from PySide import QtGui
 
-# translate = FreeCAD.Qt.translate
+# translate = App.Qt.translate
 
 __title__ = "Assembly Commands"
 __author__ = "Ondsel"
@@ -53,11 +53,11 @@ class CommandCreateAssembly:
         }
 
     def IsActive(self):
-        return FreeCAD.ActiveDocument is not None
+        return App.ActiveDocument is not None
 
     def Activated(self):
-        assembly = FreeCAD.ActiveDocument.addObject('App::Part','Assembly')
-        assembly.Type='Assembly'
+        assembly = App.ActiveDocument.addObject('App::Part','Assembly')
+        assembly.Type = 'Assembly'
 
 
 if FreeCAD.GuiUp:
