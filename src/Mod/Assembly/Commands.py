@@ -37,14 +37,13 @@ __url__ = "https://www.freecad.org"
 
 
 class CommandCreateAssembly:
-    # Command creating a new assembly object.
 
     def __init__(self):
         pass
 
     def GetResources(self):
         return {
-            "Pixmap": "AssemblyWorkbench",
+            "Pixmap": "Geoassembly",
             "MenuText": QT_TRANSLATE_NOOP("Assembly_CreateAssembly", "Create Assembly"),
             "Accel": "A",
             "ToolTip": QT_TRANSLATE_NOOP(
@@ -57,7 +56,8 @@ class CommandCreateAssembly:
         return FreeCAD.ActiveDocument is not None
 
     def Activated(self):
-        print ('did the create assembly command')
+        assembly = FreeCAD.ActiveDocument.addObject('App::Part','Assembly')
+        assembly.Type='Assembly'
 
 
 if FreeCAD.GuiUp:
