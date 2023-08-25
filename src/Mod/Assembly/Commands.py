@@ -60,7 +60,47 @@ class CommandCreateAssembly:
         assembly.Type = 'Assembly'
 
 
-if FreeCAD.GuiUp:
-    FreeCADGui.addCommand("Assembly_CreateAssembly", CommandCreateAssembly())
+class CommandInsertLink:
+
+    def __init__(self):
+        pass
+
+    def GetResources(self):
+        tooltip  = "<p>Insert a Link into the assembly. "
+        tooltip += "This will create a dynamic link to a part/body/primitive/assembly, "
+        tooltip += "which can be in this document or in another document "
+        tooltip += "that is open in the current session</p>"
+        tooltip += "<p><b>Note</b>: the part must be open in the current session</p>"
+        tooltip += "<p>This command also enables to repair broken/missing links. "
+        tooltip += "Select the broken link, launch this command, and select a new target part in the list</p>"
+
+        return {
+            "Pixmap": "Assembly_InsertLink.svg",
+            "MenuText": QT_TRANSLATE_NOOP("Assembly_InsertLink", "Insert Link"),
+            "Accel": "I",
+            "ToolTip": QT_TRANSLATE_NOOP("Assembly_InsertLink", tooltip),
+            "CmdType": "ForEdit",
+        }
+
+    def IsActive(self):
+        doc = Gui.ActiveDocument
+
+        if (doc is None or doc.ActiveView is None):
+            return False
+
+        active_part, parent, sub = doc.ActiveView.getActiveObject('part', False)
+
+        if (active_part is not None and active_part.Type == "Assembly"):
+            return True
+
+        return False
+
+    def Activated(self):
+        print("Insert Link command clicked. Not implemented yet.")
+
+
+if App.GuiUp:
+    Gui.addCommand("Assembly_CreateAssembly", CommandCreateAssembly())
+    Gui.addCommand("Assembly_InsertLink", CommandInsertLink())
 
 

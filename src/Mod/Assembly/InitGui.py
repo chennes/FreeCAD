@@ -74,7 +74,7 @@ class AssemblyWorkbench(Workbench):
         FreeCADGui.addPreferencePage(PreferencesPage, QT_TRANSLATE_NOOP("QObject", "Assembly"))
 
         # build commands list
-        cmdlist = ["Assembly_CreateAssembly"]
+        cmdlist = ["Assembly_CreateAssembly", "Assembly_InsertLink"]
 
         self.appendToolbar(QT_TRANSLATE_NOOP("Workbench", "Assembly"), cmdlist)
 
