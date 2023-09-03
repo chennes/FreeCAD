@@ -24,6 +24,7 @@
 # *                                                                         *
 # ***************************************************************************
 
+
 import os
 import functools
 import tempfile
@@ -34,39 +35,40 @@ import re  # Needed for py 3.6 and earlier, can remove later, search for "re."
 from datetime import date, timedelta
 from typing import Dict
 
-from PySide import QtGui, QtCore, QtWidgets
-import FreeCAD
-import FreeCADGui
+try:
+    import FreeCAD
+    import FreeCADGui
+    from PySide import QtGui, QtCore, QtWidgets
+except ImportError:
+    # The addon manager is NOT running from within FreeCAD: enabling this is future work
+    raise
 
-from addonmanager_workers_startup import (
+from App.addonmanager_workers_startup import (
     CreateAddonListWorker,
     LoadPackagesFromCacheWorker,
     LoadMacrosFromCacheWorker,
     CheckWorkbenchesForUpdatesWorker,
     CacheMacroCodeWorker,
 )
-from addonmanager_workers_installation import (
+from App.addonmanager_workers_installation import (
     UpdateMetadataCacheWorker,
 )
-from addonmanager_installer_gui import AddonInstallerGUI, MacroInstallerGUI
-from addonmanager_uninstaller_gui import AddonUninstallerGUI
-from addonmanager_update_all_gui import UpdateAllGUI
-import addonmanager_utilities as utils
-import AddonManager_rc  # This is required by Qt, it's not unused
-from package_list import PackageList, PackageListItemModel
-from package_details import PackageDetails
-from Addon import Addon
-from manage_python_dependencies import (
+from Gui.addonmanager_installer_gui import AddonInstallerGUI, MacroInstallerGUI
+from Gui.addonmanager_uninstaller_gui import AddonUninstallerGUI
+from Gui.addonmanager_update_all_gui import UpdateAllGUI
+from App import addonmanager_utilities as utils, NetworkManager
+from Gui.package_list import PackageList, PackageListItemModel
+from Gui.package_details import PackageDetails
+from App.Addon import Addon
+from Gui.manage_python_dependencies import (
     PythonPackageManager,
 )
-from addonmanager_devmode import DeveloperMode
-from addonmanager_firstrun import FirstRunDialog
-from addonmanager_connection_checker import ConnectionCheckerGUI
-from addonmanager_devmode_metadata_checker import MetadataValidators
+from Gui.addonmanager_devmode import DeveloperMode
+from Gui.addonmanager_firstrun import FirstRunDialog
+from Gui.addonmanager_connection_checker import ConnectionCheckerGUI
+from Gui.addonmanager_devmode_metadata_checker import MetadataValidators
 
-import NetworkManager
-
-from AddonManagerOptions import AddonManagerOptions
+from Gui.AddonManagerOptions import AddonManagerOptions
 
 translate = FreeCAD.Qt.translate
 
@@ -77,7 +79,7 @@ def QT_TRANSLATE_NOOP(_, txt):
 
 __title__ = "FreeCAD Addon Manager Module"
 __author__ = "Yorik van Havre", "Jonathan Wiedemann", "Kurt Kremitzki", "Chris Hennes"
-__url__ = "http://www.freecad.org"
+__url__ = "https://www.freecad.org"
 
 """
 FreeCAD Addon Manager Module
@@ -91,6 +93,16 @@ Additional git sources may be configure via user preferences.
 
 You need a working internet connection, and optionally git -- if git is not available, ZIP archives
 are downloaded instead.
+
+ 1) Fetching a list of addons
+ 2) Determining whether installed addons need updates
+ 3) Installing addons
+ 4) Developer mode (Package Metadata editing)
+ 5) Dependency maintenance (updating and removing Python packages)
+
+ These are supported by a user interface that displays either a list of addons, or information
+ about a single selected addon, plus separate dialogs for running updates of the addons or the
+ Python dependencies, and Developer Mode.
 """
 
 #  \defgroup ADDONMANAGER AddonManager
@@ -169,7 +181,7 @@ class CommandAddonManager:
 
         # create the dialog
         self.dialog = FreeCADGui.PySideUic.loadUi(
-            os.path.join(os.path.dirname(__file__), "AddonManager.ui")
+            os.path.join(os.path.dirname(__file__), "Gui/AddonManager.ui")
         )
         self.dialog.setObjectName("AddonManager_Main_Window")
         # self.dialog.setWindowFlag(QtCore.Qt.WindowStaysOnTopHint, True)

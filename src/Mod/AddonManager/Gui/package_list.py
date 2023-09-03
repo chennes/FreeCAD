@@ -30,13 +30,13 @@ import FreeCAD
 
 from PySide import QtCore, QtGui, QtWidgets
 
-from Addon import Addon
+from App.Addon import Addon
 
-from compact_view import Ui_CompactView
-from expanded_view import Ui_ExpandedView
+from Gui.compact_view import Ui_CompactView
+from Gui.expanded_view import Ui_ExpandedView
 
-import addonmanager_utilities as utils
-from addonmanager_metadata import get_first_supported_freecad_version, Version
+from App import addonmanager_utilities as utils
+from App.addonmanager_metadata import get_first_supported_freecad_version, Version
 
 translate = FreeCAD.Qt.translate
 

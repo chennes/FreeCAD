@@ -36,7 +36,7 @@ import urllib.parse
 from addonmanager_macro_parser import MacroParser
 import addonmanager_utilities as utils
 
-import addonmanager_freecad_interface as fci
+from App import addonmanager_freecad_interface as fci
 
 translate = fci.translate
 

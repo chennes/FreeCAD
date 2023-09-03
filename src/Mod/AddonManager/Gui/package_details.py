@@ -28,13 +28,12 @@ from typing import Optional
 
 from PySide import QtCore, QtGui, QtWidgets
 
-import addonmanager_freecad_interface as fci
+from App import addonmanager_freecad_interface as fci, addonmanager_utilities as utils
 
-import addonmanager_utilities as utils
-from addonmanager_metadata import Version, UrlType, get_first_supported_freecad_version
-from addonmanager_workers_startup import GetMacroDetailsWorker, CheckSingleUpdateWorker
-from Addon import Addon
-from change_branch import ChangeBranchDialog
+from App.addonmanager_metadata import Version, UrlType, get_first_supported_freecad_version
+from App.addonmanager_workers_startup import GetMacroDetailsWorker, CheckSingleUpdateWorker
+from App.Addon import Addon
+from Gui.change_branch import ChangeBranchDialog
 
 have_git = False
 try:

@@ -27,9 +27,9 @@ from typing import List
 
 import FreeCAD
 
-from Addon import Addon
-from addonmanager_metadata import Metadata
-import NetworkManager
+from App.Addon import Addon
+from App.addonmanager_metadata import Metadata
+from App import NetworkManager
 
 
 class MetadataValidators:

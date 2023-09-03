@@ -28,7 +28,7 @@ import tempfile
 from time import sleep
 import unittest
 
-from addonmanager_dependency_installer import DependencyInstaller
+from App.addonmanager_dependency_installer import DependencyInstaller
 
 
 class CompleteProcessMock(subprocess.CompletedProcess):

@@ -32,7 +32,7 @@ sys.path.append("../../")  # So the IDE can find the
 
 import FreeCAD
 
-from addonmanager_macro import Macro
+from App.addonmanager_macro import Macro
 
 
 class TestMacro(unittest.TestCase):

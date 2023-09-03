@@ -23,13 +23,12 @@
 
 from time import sleep
 import unittest
-import FreeCAD
 
-from Addon import Addon
+from App.Addon import Addon
 
 from PySide import QtCore, QtWidgets
 
-from addonmanager_update_all_gui import UpdateAllGUI, AddonStatus
+from Gui.addonmanager_update_all_gui import UpdateAllGUI, AddonStatus
 
 
 class MockUpdater(QtCore.QObject):

@@ -26,12 +26,15 @@ import unittest
 import os
 import shutil
 import stat
+import sys
 import tempfile
 import time
 from zipfile import ZipFile
-import FreeCAD
 
-from addonmanager_git import GitManager, NoGitFound, GitFailed
+sys.path.append("../../")
+
+from App import addonmanager_freecad_interface as fci
+from App.addonmanager_git import GitManager, NoGitFound, GitFailed
 
 
 class TestGit(unittest.TestCase):
@@ -42,7 +45,7 @@ class TestGit(unittest.TestCase):
         """Set up the test case: called by the unit test system"""
         self.cwd = os.getcwd()
         test_data_dir = os.path.join(
-            FreeCAD.getHomePath(), "Mod", "AddonManager", "AddonManagerTest", "data"
+            fci.getHomePath(), "Mod", "AddonManager", "AddonManagerTest", "data"
         )
         git_repo_zip = os.path.join(test_data_dir, "test_repo.zip")
         self.test_dir = os.path.join(

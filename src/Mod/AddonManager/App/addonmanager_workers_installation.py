@@ -26,22 +26,16 @@
 
 # pylint: disable=c-extension-no-member,too-few-public-methods,too-many-instance-attributes
 
-import io
 import os
-import queue
-import shutil
-import subprocess
-import time
-import zipfile
-from typing import Dict, List
+from typing import Dict
 from enum import Enum, auto
 
 from PySide import QtCore
 
 import FreeCAD
-import addonmanager_utilities as utils
-from addonmanager_metadata import MetadataReader
-from Addon import Addon
+from App import addonmanager_utilities as utils
+from App.addonmanager_metadata import MetadataReader
+from App.Addon import Addon
 import NetworkManager
 
 translate = FreeCAD.Qt.translate

@@ -30,7 +30,7 @@ import unittest
 
 sys.path.append("../../")  # So the IDE can find the classes to run with
 
-from addonmanager_macro_parser import MacroParser
+from App.addonmanager_macro_parser import MacroParser
 from AddonManagerTest.app.mocks import MockConsole, CallCatcher, MockThread
 
 

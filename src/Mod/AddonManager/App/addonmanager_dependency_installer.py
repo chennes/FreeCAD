@@ -32,7 +32,7 @@ from addonmanager_pyside_interface import QObject, Signal, is_interruption_reque
 
 import addonmanager_utilities as utils
 from addonmanager_installer import AddonInstaller, MacroInstaller
-from Addon import Addon
+from App.Addon import Addon
 
 translate = fci.translate
 

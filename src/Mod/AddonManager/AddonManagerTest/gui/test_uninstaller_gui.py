@@ -35,7 +35,7 @@ from AddonManagerTest.gui.gui_mocks import (
 )
 from AddonManagerTest.app.mocks import MockAddon
 
-from addonmanager_uninstaller_gui import AddonUninstallerGUI
+from Gui.addonmanager_uninstaller_gui import AddonUninstallerGUI
 
 translate = FreeCAD.Qt.translate
 

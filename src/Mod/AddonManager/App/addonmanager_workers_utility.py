@@ -27,7 +27,7 @@ from typing import Optional
 
 import FreeCAD
 from PySide import QtCore
-import addonmanager_utilities as utils
+from App import addonmanager_utilities as utils
 
 translate = FreeCAD.Qt.translate
 

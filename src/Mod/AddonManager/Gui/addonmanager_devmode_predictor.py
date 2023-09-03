@@ -33,8 +33,8 @@ import datetime
 import os
 
 import FreeCAD
-from addonmanager_git import initialize_git, GitManager
-from addonmanager_utilities import get_readme_url
+from App.addonmanager_git import initialize_git, GitManager
+from App.addonmanager_utilities import get_readme_url
 
 translate = FreeCAD.Qt.translate
 

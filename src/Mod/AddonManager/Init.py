@@ -3,6 +3,9 @@
 # (c) 2001 Juergen Riegel
 # License LGPL
 
-import FreeCAD
+try:
+    import FreeCAD
 
-FreeCAD.__unit_test__ += ["TestAddonManagerApp"]
+    FreeCAD.__unit_test__ += ["TestAddonManagerApp"]
+except ImportError:
+    pass

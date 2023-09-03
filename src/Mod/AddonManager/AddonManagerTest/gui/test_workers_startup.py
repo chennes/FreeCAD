@@ -30,9 +30,9 @@ import FreeCAD
 
 from PySide import QtCore
 
-import NetworkManager
-from Addon import Addon
-from addonmanager_workers_startup import (
+from App import NetworkManager
+from App.Addon import Addon
+from App.addonmanager_workers_startup import (
     CreateAddonListWorker,
     LoadPackagesFromCacheWorker,
     LoadMacrosFromCacheWorker,

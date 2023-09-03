@@ -63,7 +63,7 @@ except ImportError:
         return string
 
     def Version():
-        return 0, 21, 0, "dev"
+        return 0, 22, 0, "dev"
 
     class ConsoleReplacement:
         """If FreeCAD's Console is not available, create a replacement by redirecting FreeCAD
@@ -169,7 +169,7 @@ class DataPaths:
             if self.macro_dir is None:
                 self.macro_dir = tempfile.mkdtemp()
             if self.home_dir is None:
-                self.home_dir = os.path.join(os.path.dirname(__file__), "..", "..")
+                self.home_dir = os.path.join(os.path.dirname(__file__), "../..", "..")
 
     def __del__(self):
         self.reference_count -= 1

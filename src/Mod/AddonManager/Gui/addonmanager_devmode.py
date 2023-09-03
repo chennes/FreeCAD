@@ -42,14 +42,14 @@ from PySide.QtGui import (
     QPixmap,
 )
 from PySide.QtCore import Qt
-from addonmanager_git import GitManager, NoGitFound
+from App.addonmanager_git import GitManager, NoGitFound
 
 from addonmanager_devmode_add_content import AddContent
 from addonmanager_devmode_validators import NameValidator, VersionValidator
 from addonmanager_devmode_predictor import Predictor
 from addonmanager_devmode_people_table import PeopleTable
 from addonmanager_devmode_licenses_table import LicensesTable
-import addonmanager_utilities as utils
+from App import addonmanager_utilities as utils
 
 translate = FreeCAD.Qt.translate
 

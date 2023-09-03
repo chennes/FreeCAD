@@ -21,7 +21,7 @@
 # *                                                                         *
 # ***************************************************************************
 
-import addonmanager_freecad_interface as fci
+from App import addonmanager_freecad_interface as fci
 
 # Unit test for the Addon Manager module GUI
 from AddonManagerTest.gui.test_gui import TestGui as AddonManagerTestGui

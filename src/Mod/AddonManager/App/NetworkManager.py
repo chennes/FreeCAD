@@ -431,7 +431,7 @@ if HAVE_QTNETWORK:
             a window asking for credentials. If the GUI is not running, it prompts on the command line."""
             if HAVE_FREECAD and FreeCAD.GuiUp:
                 proxy_authentication = FreeCADGui.PySideUic.loadUi(
-                    os.path.join(os.path.dirname(__file__), "proxy_authentication.ui")
+                    os.path.join(os.path.dirname(__file__), "../Gui/proxy_authentication.ui")
                 )
                 proxy_authentication.setWindowFlag(QtCore.Qt.WindowStaysOnTopHint, True)
                 # Show the right labels, etc.

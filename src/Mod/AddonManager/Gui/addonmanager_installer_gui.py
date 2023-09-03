@@ -33,10 +33,10 @@ import FreeCAD
 import FreeCADGui
 from PySide import QtCore, QtWidgets
 
-from addonmanager_installer import AddonInstaller, MacroInstaller
-from addonmanager_dependency_installer import DependencyInstaller
-import addonmanager_utilities as utils
-from Addon import Addon, MissingDependencies
+from App.addonmanager_installer import AddonInstaller, MacroInstaller
+from App.addonmanager_dependency_installer import DependencyInstaller
+from App import addonmanager_utilities as utils
+from App.Addon import Addon, MissingDependencies
 
 translate = FreeCAD.Qt.translate
 from PySide.QtCore import QT_TRANSLATE_NOOP

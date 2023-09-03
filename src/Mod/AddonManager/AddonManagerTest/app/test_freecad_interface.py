@@ -54,7 +54,7 @@ class TestConsole(unittest.TestCase):
     def test_log_with_freecad(self):
         """Ensure that if FreeCAD exists, the appropriate function is called"""
         sys.modules["FreeCAD"] = unittest.mock.MagicMock()
-        import addonmanager_freecad_interface as fc
+        from App import addonmanager_freecad_interface as fc
 
         fc.Console.PrintLog("Test output")
         self.assertTrue(isinstance(fc.Console, unittest.mock.MagicMock))
@@ -65,7 +65,7 @@ class TestConsole(unittest.TestCase):
         implements PrintLog"""
         sys.modules["FreeCAD"] = None
         with patch("addonmanager_freecad_interface.logging", new=MagicMock()) as mock_logging:
-            import addonmanager_freecad_interface as fc
+            from App import addonmanager_freecad_interface as fc
 
             fc.Console.PrintLog("Test output")
             self.assertTrue(isinstance(fc.Console, fc.ConsoleReplacement))
@@ -75,7 +75,7 @@ class TestConsole(unittest.TestCase):
         """Test that if the FreeCAD import fails the logger implements PrintMessage"""
         sys.modules["FreeCAD"] = None
         with patch("addonmanager_freecad_interface.logging", new=MagicMock()) as mock_logging:
-            import addonmanager_freecad_interface as fc
+            from App import addonmanager_freecad_interface as fc
 
             fc.Console.PrintMessage("Test output")
             self.assertTrue(mock_logging.info.called)
@@ -84,7 +84,7 @@ class TestConsole(unittest.TestCase):
         """Test that if the FreeCAD import fails the logger implements PrintWarning"""
         sys.modules["FreeCAD"] = None
         with patch("addonmanager_freecad_interface.logging", new=MagicMock()) as mock_logging:
-            import addonmanager_freecad_interface as fc
+            from App import addonmanager_freecad_interface as fc
 
             fc.Console.PrintWarning("Test output")
             self.assertTrue(mock_logging.warning.called)
@@ -93,7 +93,7 @@ class TestConsole(unittest.TestCase):
         """Test that if the FreeCAD import fails the logger implements PrintError"""
         sys.modules["FreeCAD"] = None
         with patch("addonmanager_freecad_interface.logging", new=MagicMock()) as mock_logging:
-            import addonmanager_freecad_interface as fc
+            from App import addonmanager_freecad_interface as fc
 
             fc.Console.PrintError("Test output")
             self.assertTrue(mock_logging.error.called)
@@ -120,7 +120,7 @@ class TestParameters(unittest.TestCase):
     def test_param_get_with_freecad(self):
         """Ensure that if FreeCAD exists, the built-in FreeCAD function is called"""
         sys.modules["FreeCAD"] = unittest.mock.MagicMock()
-        import addonmanager_freecad_interface as fc
+        from App import addonmanager_freecad_interface as fc
 
         prefs = fc.ParamGet("some/fake/path")
         self.assertTrue(isinstance(prefs, unittest.mock.MagicMock))
@@ -128,7 +128,7 @@ class TestParameters(unittest.TestCase):
     def test_param_get_no_freecad(self):
         """Test that if the FreeCAD import fails, param_get returns a ParametersReplacement"""
         sys.modules["FreeCAD"] = None
-        import addonmanager_freecad_interface as fc
+        from App import addonmanager_freecad_interface as fc
 
         prefs = fc.ParamGet("some/fake/path")
         self.assertTrue(isinstance(prefs, fc.ParametersReplacement))
@@ -136,7 +136,7 @@ class TestParameters(unittest.TestCase):
     def test_replacement_getters_and_setters(self):
         """Test that ParameterReplacement's getters, setters, and deleters work"""
         sys.modules["FreeCAD"] = None
-        import addonmanager_freecad_interface as fc
+        from App import addonmanager_freecad_interface as fc
 
         prf = fc.ParamGet("some/fake/path")
         gs_types = [
@@ -183,7 +183,7 @@ class TestDataPaths(unittest.TestCase):
     def test_init_with_freecad(self):
         """Ensure that if FreeCAD exists, the appropriate functions are called"""
         sys.modules["FreeCAD"] = unittest.mock.MagicMock()
-        import addonmanager_freecad_interface as fc
+        from App import addonmanager_freecad_interface as fc
 
         data_paths = fc.DataPaths()
         self.assertTrue(sys.modules["FreeCAD"].getUserAppDataDir.called)
@@ -196,7 +196,7 @@ class TestDataPaths(unittest.TestCase):
     def test_init_without_freecad(self):
         """Ensure that if FreeCAD does not exist, the appropriate functions are called"""
         sys.modules["FreeCAD"] = None
-        import addonmanager_freecad_interface as fc
+        from App import addonmanager_freecad_interface as fc
 
         data_paths = fc.DataPaths()
         self.assertIsNotNone(data_paths.mod_dir)
@@ -212,7 +212,7 @@ class TestPreferences(unittest.TestCase):
 
     def setUp(self) -> None:
         sys.path.append("../../")
-        import addonmanager_freecad_interface as fc
+        from App import addonmanager_freecad_interface as fc
 
         self.fc = fc
 

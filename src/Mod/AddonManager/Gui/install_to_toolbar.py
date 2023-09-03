@@ -28,7 +28,7 @@ import os
 import FreeCAD
 import FreeCADGui
 from PySide import QtCore, QtWidgets
-import Addon
+from App import Addon
 
 translate = FreeCAD.Qt.translate
 

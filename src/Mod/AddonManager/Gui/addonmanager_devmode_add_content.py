@@ -30,7 +30,7 @@ from typing import Optional, Tuple, List
 import FreeCAD
 import FreeCADGui
 
-from Addon import INTERNAL_WORKBENCHES
+from App.Addon import INTERNAL_WORKBENCHES
 
 from PySide.QtWidgets import (
     QDialog,
@@ -319,7 +319,7 @@ class AddContent:
 
         relative_path = subdir_path[len(base_path) :]
         if not relative_path:
-            relative_path = "./"
+            relative_path = "../"
         elif relative_path[-1] == os.path.sep:
             relative_path = relative_path[:-1]
         self.dialog.subdirectoryLineEdit.setText(relative_path)

@@ -34,10 +34,10 @@ import sys
 sys.path.append("../../")  # So the IDE can find the imports below
 
 import FreeCAD
-from addonmanager_installer import InstallationMethod, AddonInstaller, MacroInstaller
-from addonmanager_git import GitManager, initialize_git
-from addonmanager_metadata import MetadataReader
-from Addon import Addon
+from App.addonmanager_installer import InstallationMethod, AddonInstaller, MacroInstaller
+from App.addonmanager_git import initialize_git
+from App.addonmanager_metadata import MetadataReader
+from App.Addon import Addon
 from AddonManagerTest.app.mocks import MockAddon, MockMacro
 
 

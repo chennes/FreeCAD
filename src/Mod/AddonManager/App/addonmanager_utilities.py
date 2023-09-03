@@ -41,7 +41,7 @@ except ImportError:
     QtCore = None
     QtWidgets = None
 
-import addonmanager_freecad_interface as fci
+from App import addonmanager_freecad_interface as fci
 
 if fci.FreeCADGui:
 
@@ -380,7 +380,7 @@ def get_pip_target_directory():
     # Get the default location to install new pip packages
     major, minor, _ = platform.python_version_tuple()
     vendor_path = os.path.join(
-        fci.DataPaths().mod_dir, "..", "AdditionalPythonPackages", f"py{major}{minor}"
+        fci.DataPaths().mod_dir, "../..", "AdditionalPythonPackages", f"py{major}{minor}"
     )
     return vendor_path
 

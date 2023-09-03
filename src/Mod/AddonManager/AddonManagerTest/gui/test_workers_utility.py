@@ -24,10 +24,10 @@
 import unittest
 import os
 import FreeCAD
-from addonmanager_workers_utility import ConnectionChecker
+from App.addonmanager_workers_utility import ConnectionChecker
 from PySide import QtCore
 
-import NetworkManager
+from App import NetworkManager
 
 
 class TestWorkersUtility(unittest.TestCase):

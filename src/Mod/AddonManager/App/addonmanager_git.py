@@ -33,7 +33,7 @@ from typing import List, Optional
 import time
 
 import addonmanager_utilities as utils
-import addonmanager_freecad_interface as fci
+from App import addonmanager_freecad_interface as fci
 
 translate = fci.translate
 
@@ -114,7 +114,7 @@ class GitManager:
                     "facility and can be safely deleted if the addon is working "
                     "properly."
                 )
-            os.chdir("..")
+            os.chdir("../..")
             os.rename(local_path, local_path + ".backup" + str(time.time()))
             self.clone(remote, local_path)
         os.chdir(old_dir)
@@ -202,7 +202,7 @@ class GitManager:
         # "rename" will fail. To guarantee we aren't in it, change to it, then shift
         # up one.
         os.chdir(local_path)
-        os.chdir("..")
+        os.chdir("../..")
         backup_path = local_path + ".backup" + str(time.time())
         os.rename(local_path, backup_path)
         try:

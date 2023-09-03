@@ -28,7 +28,7 @@ import FreeCAD
 
 from PySide import QtCore, QtWidgets
 
-from addonmanager_installer_gui import AddonInstallerGUI, MacroInstallerGUI
+from Gui.addonmanager_installer_gui import AddonInstallerGUI, MacroInstallerGUI
 
 from AddonManagerTest.gui.gui_mocks import DialogWatcher, DialogInteractor
 from AddonManagerTest.app.mocks import MockAddon

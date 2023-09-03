@@ -28,11 +28,11 @@ MacroUninstaller for details."""
 import os
 from typing import List
 
-import addonmanager_freecad_interface as fci
-from addonmanager_pyside_interface import QObject, Signal
+from App import addonmanager_freecad_interface as fci
+from App.addonmanager_pyside_interface import QObject, Signal
 
 import addonmanager_utilities as utils
-from Addon import Addon
+from App.Addon import Addon
 
 translate = fci.translate
 

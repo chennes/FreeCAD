@@ -45,7 +45,7 @@ class TestVersion(unittest.TestCase):
             sys.modules["packaging.version"] = self.packaging_version
 
     def test_init_from_string_manual(self):
-        import addonmanager_metadata as amm
+        from App import addonmanager_metadata as amm
 
         version = amm.Version()
         version._parse_string_to_tuple = unittest.mock.MagicMock()
@@ -54,7 +54,7 @@ class TestVersion(unittest.TestCase):
 
     def test_init_from_list_good(self):
         """Initialization from a list works for good input"""
-        import addonmanager_metadata as amm
+        from App import addonmanager_metadata as amm
 
         test_cases = [
             {"input": (1,), "output": [1, 0, 0, ""]},
@@ -69,7 +69,7 @@ class TestVersion(unittest.TestCase):
 
     def test_parse_string_to_tuple_normal(self):
         """Parsing of complete version string works for normal cases"""
-        import addonmanager_metadata as amm
+        from App import addonmanager_metadata as amm
 
         cases = {
             "1": [1, 0, 0, ""],
@@ -88,7 +88,7 @@ class TestVersion(unittest.TestCase):
 
     def test_parse_string_to_tuple_invalid(self):
         """Parsing of invalid version string raises an exception"""
-        import addonmanager_metadata as amm
+        from App import addonmanager_metadata as amm
 
         cases = {"One", "1,2,3", "1-2-3", "1/2/3"}
         for inp in cases:
@@ -99,7 +99,7 @@ class TestVersion(unittest.TestCase):
 
     def test_parse_final_entry_normal(self):
         """Parsing of the final entry works for normal cases"""
-        import addonmanager_metadata as amm
+        from App import addonmanager_metadata as amm
 
         cases = {
             "3beta": (3, "beta"),
@@ -116,7 +116,7 @@ class TestVersion(unittest.TestCase):
 
     def test_parse_final_entry_invalid(self):
         """Invalid input raises an exception"""
-        import addonmanager_metadata as amm
+        from App import addonmanager_metadata as amm
 
         cases = ["beta", "", ["a", "b"]]
         for case in cases:
@@ -127,7 +127,7 @@ class TestVersion(unittest.TestCase):
     def test_operators_internal(self):
         """Test internal (non-package) comparison operators"""
         sys.modules["packaging.version"] = None
-        import addonmanager_metadata as amm
+        from App import addonmanager_metadata as amm
 
         cases = self.given_comparison_cases()
         for case in cases:
@@ -159,7 +159,7 @@ class TestDependencyType(unittest.TestCase):
     """Ensure that the DependencyType dataclass converts to the correct strings"""
 
     def setUp(self) -> None:
-        from addonmanager_metadata import DependencyType
+        from App.addonmanager_metadata import DependencyType
 
         self.DependencyType = DependencyType
 
@@ -180,7 +180,7 @@ class TestUrlType(unittest.TestCase):
     """Ensure that the UrlType dataclass converts to the correct strings"""
 
     def setUp(self) -> None:
-        from addonmanager_metadata import UrlType
+        from App.addonmanager_metadata import UrlType
 
         self.UrlType = UrlType
 
@@ -205,8 +205,7 @@ class TestUrlType(unittest.TestCase):
 
 class TestMetadataAuxiliaryFunctions(unittest.TestCase):
     def test_get_first_supported_freecad_version_simple(self):
-        from addonmanager_metadata import (
-            Metadata,
+        from App.addonmanager_metadata import (
             Version,
             get_first_supported_freecad_version,
         )
@@ -218,15 +217,14 @@ class TestMetadataAuxiliaryFunctions(unittest.TestCase):
 
     @staticmethod
     def given_metadata_with_freecadmin_set(min_version):
-        from addonmanager_metadata import Metadata
+        from App.addonmanager_metadata import Metadata
 
         metadata = Metadata()
         metadata.freecadmin = min_version
         return metadata
 
     def test_get_first_supported_freecad_version_with_content(self):
-        from addonmanager_metadata import (
-            Metadata,
+        from App.addonmanager_metadata import (
             Version,
             get_first_supported_freecad_version,
         )
@@ -238,7 +236,7 @@ class TestMetadataAuxiliaryFunctions(unittest.TestCase):
 
     @staticmethod
     def given_metadata_with_freecadmin_in_content(min_version):
-        from addonmanager_metadata import Metadata, Version
+        from App.addonmanager_metadata import Metadata, Version
 
         v_list = min_version.version_as_list
         metadata = Metadata()
@@ -270,7 +268,7 @@ class TestMetadataReader(unittest.TestCase):
             sys.modules.pop("addonmanager_metadata")
 
     def test_from_file(self):
-        from addonmanager_metadata import MetadataReader
+        from App.addonmanager_metadata import MetadataReader
 
         MetadataReader.from_bytes = Mock()
         with tempfile.NamedTemporaryFile(delete=False) as temp:
@@ -283,17 +281,16 @@ class TestMetadataReader(unittest.TestCase):
 
     @unittest.skip("Breaks other tests, needs to be fixed")
     def test_from_bytes(self):
-        import xml.etree.ElementTree
 
         with unittest.mock.patch("xml.etree.ElementTree") as element_tree_mock:
-            from addonmanager_metadata import MetadataReader
+            from App.addonmanager_metadata import MetadataReader
 
             MetadataReader._process_element_tree = Mock()
             MetadataReader.from_bytes(b"Some data")
             element_tree_mock.parse.assert_called_once_with(b"Some data")
 
     def test_process_element_tree(self):
-        from addonmanager_metadata import MetadataReader
+        from App.addonmanager_metadata import MetadataReader
 
         MetadataReader._determine_namespace = Mock(return_value="")
         element_tree_mock = Mock()
@@ -302,7 +299,7 @@ class TestMetadataReader(unittest.TestCase):
         MetadataReader._create_node.assert_called_once()
 
     def test_determine_namespace_found_full(self):
-        from addonmanager_metadata import MetadataReader
+        from App.addonmanager_metadata import MetadataReader
 
         root = Mock()
         root.tag = "{https://wiki.freecad.org/Package_Metadata}package"
@@ -310,7 +307,7 @@ class TestMetadataReader(unittest.TestCase):
         self.assertEqual(found_ns, "{https://wiki.freecad.org/Package_Metadata}")
 
     def test_determine_namespace_found_empty(self):
-        from addonmanager_metadata import MetadataReader
+        from App.addonmanager_metadata import MetadataReader
 
         root = Mock()
         root.tag = "package"
@@ -318,7 +315,7 @@ class TestMetadataReader(unittest.TestCase):
         self.assertEqual(found_ns, "")
 
     def test_determine_namespace_not_found(self):
-        from addonmanager_metadata import MetadataReader
+        from App.addonmanager_metadata import MetadataReader
 
         root = Mock()
         root.find = Mock(return_value=False)
@@ -326,7 +323,7 @@ class TestMetadataReader(unittest.TestCase):
             MetadataReader._determine_namespace(root)
 
     def test_parse_child_element_simple_strings(self):
-        from addonmanager_metadata import Metadata, MetadataReader
+        from App.addonmanager_metadata import Metadata, MetadataReader
 
         tags = ["name", "date", "description", "icon", "classname", "subdirectory"]
         for tag in tags:
@@ -338,7 +335,7 @@ class TestMetadataReader(unittest.TestCase):
                 self.assertEqual(mock_metadata.__dict__[tag], text)
 
     def test_parse_child_element_version(self):
-        from addonmanager_metadata import Metadata, Version, MetadataReader
+        from App.addonmanager_metadata import Metadata, Version, MetadataReader
 
         mock_metadata = Metadata()
         child = self.given_mock_tree_node("version", "1.2.3")
@@ -346,7 +343,7 @@ class TestMetadataReader(unittest.TestCase):
         self.assertEqual(Version("1.2.3"), mock_metadata.version)
 
     def test_parse_child_element_version_bad(self):
-        from addonmanager_metadata import Metadata, Version, MetadataReader
+        from App.addonmanager_metadata import Metadata, Version, MetadataReader
 
         mock_metadata = Metadata()
         child = self.given_mock_tree_node("version", "1-2-3")
@@ -354,7 +351,7 @@ class TestMetadataReader(unittest.TestCase):
         self.assertEqual(Version("0.0.0"), mock_metadata.version)
 
     def test_parse_child_element_lists_of_strings(self):
-        from addonmanager_metadata import Metadata, MetadataReader
+        from App.addonmanager_metadata import Metadata, MetadataReader
 
         tags = ["file", "tag"]
         for tag in tags:
@@ -370,7 +367,7 @@ class TestMetadataReader(unittest.TestCase):
                 self.assertListEqual(mock_metadata.__dict__[tag], expected_results)
 
     def test_parse_child_element_lists_of_contacts(self):
-        from addonmanager_metadata import Metadata, Contact, MetadataReader
+        from App.addonmanager_metadata import Metadata, Contact, MetadataReader
 
         tags = ["maintainer", "author"]
         for tag in tags:
@@ -387,7 +384,7 @@ class TestMetadataReader(unittest.TestCase):
                 self.assertListEqual(mock_metadata.__dict__[tag], expected_results)
 
     def test_parse_child_element_list_of_licenses(self):
-        from addonmanager_metadata import Metadata, License, MetadataReader
+        from App.addonmanager_metadata import Metadata, License, MetadataReader
 
         mock_metadata = Metadata()
         expected_results = []
@@ -402,7 +399,7 @@ class TestMetadataReader(unittest.TestCase):
         self.assertListEqual(mock_metadata.__dict__[tag], expected_results)
 
     def test_parse_child_element_list_of_urls(self):
-        from addonmanager_metadata import Metadata, Url, UrlType, MetadataReader
+        from App.addonmanager_metadata import Metadata, Url, UrlType, MetadataReader
 
         mock_metadata = Metadata()
         expected_results = []
@@ -421,7 +418,7 @@ class TestMetadataReader(unittest.TestCase):
         self.assertListEqual(mock_metadata.__dict__[tag], expected_results)
 
     def test_parse_child_element_lists_of_dependencies(self):
-        from addonmanager_metadata import (
+        from App.addonmanager_metadata import (
             Metadata,
             Dependency,
             DependencyType,
@@ -461,7 +458,7 @@ class TestMetadataReader(unittest.TestCase):
                     self.assertListEqual(mock_metadata.__dict__[tag], expected_results)
 
     def test_parse_child_element_ignore_unknown_tag(self):
-        from addonmanager_metadata import Metadata, MetadataReader
+        from App.addonmanager_metadata import Metadata, MetadataReader
 
         tag = "invalid_tag"
         text = "Shouldn't matter"
@@ -471,7 +468,7 @@ class TestMetadataReader(unittest.TestCase):
         self.assertNotIn(tag, mock_metadata.__dict__)
 
     def test_parse_child_element_versions(self):
-        from addonmanager_metadata import Metadata, Version, MetadataReader
+        from App.addonmanager_metadata import Metadata, Version, MetadataReader
 
         tags = ["version", "freecadmin", "freecadmax", "pythonmin"]
         for tag in tags:
@@ -492,7 +489,7 @@ class TestMetadataReader(unittest.TestCase):
         return MockTreeNode()
 
     def test_parse_content_valid(self):
-        from addonmanager_metadata import MetadataReader
+        from App.addonmanager_metadata import MetadataReader
 
         valid_content_items = ["workbench", "macro", "preferencepack"]
         MetadataReader._create_node = Mock()
@@ -505,7 +502,7 @@ class TestMetadataReader(unittest.TestCase):
                 MetadataReader._create_node.reset_mock()
 
     def test_parse_content_invalid(self):
-        from addonmanager_metadata import MetadataReader
+        from App.addonmanager_metadata import MetadataReader
 
         MetadataReader._create_node = Mock()
         content_item = "no_such_content_type"
@@ -529,9 +526,8 @@ class TestMetadataReaderIntegration(unittest.TestCase):
             sys.modules.pop(key)
 
     def test_loading_simple_metadata_file(self):
-        from addonmanager_metadata import (
+        from App.addonmanager_metadata import (
             Contact,
-            Dependency,
             License,
             MetadataReader,
             Url,
@@ -574,7 +570,7 @@ class TestMetadataReaderIntegration(unittest.TestCase):
         self.assertListEqual(["TagA", "TagB", "TagC"], wb_metadata.tag)
 
     def test_multiple_workbenches(self):
-        from addonmanager_metadata import MetadataReader
+        from App.addonmanager_metadata import MetadataReader
 
         filename = os.path.join(self.test_data_dir, "workbench_only.xml")
         metadata = MetadataReader.from_file(filename)
@@ -591,7 +587,7 @@ class TestMetadataReaderIntegration(unittest.TestCase):
         self.assertEqual(len(expected_wb_classnames), 0)
 
     def test_multiple_macros(self):
-        from addonmanager_metadata import MetadataReader
+        from App.addonmanager_metadata import MetadataReader
 
         filename = os.path.join(self.test_data_dir, "macro_only.xml")
         metadata = MetadataReader.from_file(filename)
@@ -604,7 +600,7 @@ class TestMetadataReaderIntegration(unittest.TestCase):
         self.assertEqual(len(expected_wb_files), 0)
 
     def test_multiple_preference_packs(self):
-        from addonmanager_metadata import MetadataReader
+        from App.addonmanager_metadata import MetadataReader
 
         filename = os.path.join(self.test_data_dir, "prefpack_only.xml")
         metadata = MetadataReader.from_file(filename)
@@ -617,7 +613,7 @@ class TestMetadataReaderIntegration(unittest.TestCase):
         self.assertEqual(len(expected_packs), 0)
 
     def test_content_combination(self):
-        from addonmanager_metadata import MetadataReader
+        from App.addonmanager_metadata import MetadataReader
 
         filename = os.path.join(self.test_data_dir, "combination.xml")
         metadata = MetadataReader.from_file(filename)

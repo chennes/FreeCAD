@@ -27,8 +27,8 @@ import FreeCAD
 
 from PySide import QtCore, QtWidgets
 
-import NetworkManager
-from addonmanager_workers_utility import ConnectionChecker
+from App import NetworkManager
+from App.addonmanager_workers_utility import ConnectionChecker
 
 translate = FreeCAD.Qt.translate
 

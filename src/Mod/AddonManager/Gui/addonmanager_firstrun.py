@@ -30,7 +30,8 @@ from PySide import QtCore, QtWidgets
 import FreeCAD
 import FreeCADGui
 
-import addonmanager_utilities as utils
+from App import addonmanager_utilities as utils
+
 
 # pylint: disable=too-few-public-methods
 

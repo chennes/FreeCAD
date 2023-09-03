@@ -38,12 +38,12 @@ from typing import List
 from PySide import QtCore
 
 import FreeCAD
-import addonmanager_utilities as utils
-from addonmanager_macro import Macro
-from Addon import Addon
+from App import addonmanager_utilities as utils
+from App.addonmanager_macro import Macro
+from App.Addon import Addon
 import NetworkManager
-from addonmanager_git import initialize_git, GitFailed
-from addonmanager_metadata import MetadataReader
+from App.addonmanager_git import initialize_git, GitFailed
+from App.addonmanager_metadata import MetadataReader
 
 translate = FreeCAD.Qt.translate
 
@@ -338,7 +338,7 @@ class CreateAddonListWorker(QtCore.QThread):
             )
             try:
                 os.chdir(
-                    os.path.join(macro_cache_location, "..")
+                    os.path.join(macro_cache_location, "../..")
                 )  # Make sure we are not IN this directory
                 shutil.rmtree(macro_cache_location, onerror=self._remove_readonly)
                 self.git_manager.clone(

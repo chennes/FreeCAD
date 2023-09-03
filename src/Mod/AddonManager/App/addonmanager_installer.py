@@ -38,9 +38,9 @@ import FreeCAD
 
 from PySide import QtCore
 
-from Addon import Addon
+from App.Addon import Addon
 import addonmanager_utilities as utils
-from addonmanager_git import initialize_git, GitFailed
+from App.addonmanager_git import initialize_git, GitFailed
 
 if FreeCAD.GuiUp:
     import NetworkManager  # Requires an event loop
@@ -176,7 +176,7 @@ class AddonInstaller(QtCore.QObject):
     def _load_local_allowed_packages_list(cls) -> None:
         """Read in the local allow-list, in case the remote one is unavailable."""
         cls.allowed_packages.clear()
-        allow_file = os.path.join(os.path.dirname(__file__), "ALLOWED_PYTHON_PACKAGES.txt")
+        allow_file = os.path.join(os.path.dirname(__file__), "../ALLOWED_PYTHON_PACKAGES.txt")
         if os.path.exists(allow_file):
             with open(allow_file, encoding="utf8") as f:
                 lines = f.readlines()

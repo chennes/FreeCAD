@@ -27,8 +27,8 @@ import sys
 
 sys.path.append("../../")
 
-from Addon import Addon, INTERNAL_WORKBENCHES
-from addonmanager_macro import Macro
+from App.Addon import Addon, INTERNAL_WORKBENCHES
+from App.addonmanager_macro import Macro
 
 
 class TestAddon(unittest.TestCase):

@@ -25,9 +25,9 @@ import unittest
 import os
 import FreeCAD
 
-from Addon import Addon
+from App.Addon import Addon
 
-from addonmanager_utilities import (
+from App.addonmanager_utilities import (
     recognized_git_location,
     get_readme_url,
     get_assigned_string_literal,
