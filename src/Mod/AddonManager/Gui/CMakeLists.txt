@@ -75,7 +75,7 @@ fc_copy_sources(AddonManagerGui "${CMAKE_BINARY_DIR}/Mod/AddonManager/Gui" ${Add
 fc_target_copy_resource(AddonManagerGui
     ${CMAKE_CURRENT_BINARY_DIR}
     ${CMAKE_BINARY_DIR}/Mod/AddonManager/Gui
-    AddonManager_rc.py)
+    ${AddonManager_QRC_SRCS})
 
 install(
     FILES

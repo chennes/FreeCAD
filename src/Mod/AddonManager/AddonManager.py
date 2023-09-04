@@ -28,11 +28,9 @@
 import os
 import functools
 import tempfile
-import hashlib
 import threading
 import json
-import re  # Needed for py 3.6 and earlier, can remove later, search for "re."
-from datetime import date, timedelta
+from datetime import date
 from typing import Dict
 
 try:
@@ -43,7 +41,8 @@ except ImportError:
     # The addon manager is NOT running from within FreeCAD: enabling this is future work
     raise
 
-from App.addonmanager_cache import local_cache_needs_update
+import Gui.AddonManager_rc  # This is required to use the Qt resource system, it is NOT unused
+
 from App.addonmanager_workers_startup import (
     CreateAddonListWorker,
     LoadPackagesFromCacheWorker,
@@ -54,6 +53,7 @@ from App.addonmanager_workers_startup import (
 from App.addonmanager_workers_installation import (
     UpdateMetadataCacheWorker,
 )
+from App.addonmanager_cache import local_cache_needs_update
 from Gui.addonmanager_installer_gui import AddonInstallerGUI, MacroInstallerGUI
 from Gui.addonmanager_uninstaller_gui import AddonUninstallerGUI
 from Gui.addonmanager_update_all_gui import UpdateAllGUI
