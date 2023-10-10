@@ -263,7 +263,7 @@ public:
     }
 
     /// Get the entire element map
-    std::vector<MappedElement> getElementMap() const;
+    ElementMapPtr getElementMap(bool flush = true) const;
 
     /// Set the entire element map
     void setElementMap(const std::vector<MappedElement> &elements);
@@ -278,6 +278,19 @@ public:
 
     /** Flush an internal buffering for element mapping */
     virtual void flushElementMap() const;
+    //@}
+
+    /** @name Save/restore */
+    //@{
+    void Save (Base::Writer &writer) const override;
+    void Restore(Base::XMLReader &reader) override;
+    void SaveDocFile(Base::Writer &writer) const override;
+    void RestoreDocFile(Base::Reader &reader) override;
+    unsigned int getMemSize (void) const override;
+    void setPersistenceFileName(const char *name) const;
+    virtual void beforeSave() const;
+    bool isRestoreFailed() const { return _restoreFailed; }
+    void resetRestoreFailure() const { _restoreFailed = true; }
     //@}
 
 protected:
@@ -347,6 +360,8 @@ public:
 
 protected:
 
+    void restoreStream(std::istream &s, std::size_t count);
+
     /// from local to outside
     inline Base::Vector3d transformToOutside(const Base::Vector3f& vec) const
     {
@@ -366,7 +381,8 @@ protected:
     }
 
 protected:
-    ElementMapPtr elementMap(bool flush=true) const;
+    mutable std::string _PersistenceName;
+    mutable bool _restoreFailed = false;
 
 private:
     ElementMapPtr _elementMap;
