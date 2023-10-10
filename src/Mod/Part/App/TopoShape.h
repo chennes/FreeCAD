@@ -99,7 +99,8 @@ public:
     TopoShape(const TopoShape&);
     ~TopoShape() override;
 
-    inline void setShape(const TopoDS_Shape& shape) {
+    inline void setShape(const TopoDS_Shape& shape, bool resetElementMap=true) {
+        (void) resetElementMap;
         this->_Shape = shape;
     }
 

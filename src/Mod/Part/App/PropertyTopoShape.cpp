@@ -33,9 +33,11 @@
 # include <Standard_Failure.hxx>
 # include <Standard_Version.hxx>
 # include <TopoDS.hxx>
+# include <TopExp.hxx>
 #endif // _PreComp_
 
 #include <App/Application.h>
+#include <App/Document.h>
 #include <App/DocumentObject.h>
 #include <App/ObjectIdentifier.h>
 #include <Base/Console.h>
@@ -61,14 +63,32 @@ void PropertyPartShape::setValue(const TopoShape& sh)
 {
     aboutToSetValue();
     _Shape = sh;
+    auto obj = Base::freecad_dynamic_cast<App::DocumentObject>(getContainer());
+    if(obj) {
+        auto tag = obj->getID();
+        if(_Shape.Tag && tag!=_Shape.Tag) {
+            auto hasher = _Shape.Hasher?_Shape.Hasher:obj->getDocument()->getStringHasher();
+            _Shape.reTagElementMap(tag,hasher);
+        } else
+            _Shape.Tag = obj->getID();
+        if (!_Shape.Hasher && _Shape.getElementMap()->hasChildElementMap()) {
+            _Shape.Hasher = obj->getDocument()->getStringHasher();
+            _Shape.getElementMap()->hashChildMaps(_Shape.Tag);
+        }
+    }
     hasSetValue();
+    _Ver.clear();
 }
 
-void PropertyPartShape::setValue(const TopoDS_Shape& sh)
+void PropertyPartShape::setValue(const TopoDS_Shape& sh, bool resetElementMap)
 {
     aboutToSetValue();
-    _Shape.setShape(sh);
+    auto obj = dynamic_cast<App::DocumentObject*>(getContainer());
+    if(obj)
+        _Shape.Tag = obj->getID();
+    _Shape.setShape(sh,resetElementMap);
     hasSetValue();
+    _Ver.clear();
 }
 
 const TopoDS_Shape& PropertyPartShape::getValue() const
@@ -188,6 +208,19 @@ void PropertyPartShape::getPaths(std::vector<App::ObjectIdentifier> &paths) cons
                     << App::ObjectIdentifier::Component::SimpleComponent(App::ObjectIdentifier::String("Volume")));
 }
 
+void PropertyPartShape::beforeSave() const
+{
+    _HasherIndex = 0;
+    _SaveHasher = false;
+    auto owner = Base::freecad_dynamic_cast<App::DocumentObject>(getContainer());
+    if(owner && !_Shape.isNull() && _Shape.getElementMapSize()>0) {
+        auto ret = owner->getDocument()->addStringHasher(_Shape.Hasher);
+        _HasherIndex = ret.second;
+        _SaveHasher = ret.first;
+        _Shape.beforeSave();
+    }
+}
+
 void PropertyPartShape::Save (Base::Writer &writer) const
 {
     if(!writer.isForceXML()) {
@@ -214,6 +247,20 @@ void PropertyPartShape::Restore(Base::XMLReader &reader)
         // initiate a file read
         reader.addFile(file.c_str(),this);
     }
+}
+
+void PropertyPartShape::afterRestore()
+{
+    if (_Shape.isRestoreFailed()) {
+        // this cause GeoFeature::updateElementReference() to call
+        // PropertyLinkBase::updateElementReferences() with reverse = true, in
+        // order to try to regenerate the element map
+        _Ver = "?";
+    }
+    else if (_Shape.getElementMapSize() == 0) {
+        _Shape.Hasher = App::StringHasherRef();
+    }
+    PropertyComplexGeoData::afterRestore();
 }
 
 // The following function is copied from OCCT BRepTools.cxx and modified
@@ -464,6 +511,88 @@ void PropertyShapeHistory::Paste(const Property &from)
     aboutToSetValue();
     _lValueList = dynamic_cast<const PropertyShapeHistory&>(from)._lValueList;
     hasSetValue();
+}
+
+// -------------------------------------------------------------------------
+
+ShapeHistory::ShapeHistory(BRepBuilderAPI_MakeShape& mkShape, TopAbs_ShapeEnum type,
+                           const TopoDS_Shape& newS, const TopoDS_Shape& oldS)
+{
+    reset(mkShape,type,newS,oldS);
+}
+
+void ShapeHistory::reset(BRepBuilderAPI_MakeShape& mkShape, TopAbs_ShapeEnum type,
+                         const TopoDS_Shape& newS, const TopoDS_Shape& oldS)
+{
+    shapeMap.clear();
+    this->type = type;
+
+    TopTools_IndexedMapOfShape newM, oldM;
+    TopExp::MapShapes(newS, type, newM); // map containing all old objects of type "type"
+    TopExp::MapShapes(oldS, type, oldM); // map containing all new objects of type "type"
+
+    // Look at all objects in the old shape and try to find the modified object in the new shape
+    for (int i=1; i<=oldM.Extent(); i++) {
+        bool found = false;
+        TopTools_ListIteratorOfListOfShape it;
+        // Find all new objects that are a modification of the old object (e.g. a face was resized)
+        for (it.Initialize(mkShape.Modified(oldM(i))); it.More(); it.Next()) {
+            found = true;
+            for (int j=1; j<=newM.Extent(); j++) { // one old object might create several new ones!
+                if (newM(j).IsPartner(it.Value())) {
+                    shapeMap[i-1].push_back(j-1); // adjust indices to start at zero
+                    break;
+                }
+            }
+        }
+
+        // Find all new objects that were generated from an old object (e.g. a face generated from an edge)
+        for (it.Initialize(mkShape.Generated(oldM(i))); it.More(); it.Next()) {
+            found = true;
+            for (int j=1; j<=newM.Extent(); j++) {
+                if (newM(j).IsPartner(it.Value())) {
+                    shapeMap[i-1].push_back(j-1);
+                    break;
+                }
+            }
+        }
+
+        if (!found) {
+            // Find all old objects that don't exist any more (e.g. a face was completely cut away)
+            if (mkShape.IsDeleted(oldM(i))) {
+                shapeMap[i-1] = std::vector<int>();
+            }
+            else {
+                // Mop up the rest (will this ever be reached?)
+                for (int j=1; j<=newM.Extent(); j++) {
+                    if (newM(j).IsPartner(oldM(i))) {
+                        shapeMap[i-1].push_back(j-1);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}
+
+void ShapeHistory::join(const ShapeHistory& newH)
+{
+    ShapeHistory join;
+
+    for (ShapeHistory::MapList::const_iterator it = shapeMap.begin(); it != shapeMap.end(); ++it) {
+        int old_shape_index = it->first;
+        if (it->second.empty())
+            join.shapeMap[old_shape_index] = ShapeHistory::List();
+        for (ShapeHistory::List::const_iterator jt = it->second.begin(); jt != it->second.end(); ++jt) {
+            ShapeHistory::MapList::const_iterator kt = newH.shapeMap.find(*jt);
+            if (kt != newH.shapeMap.end()) {
+                ShapeHistory::List& ary = join.shapeMap[old_shape_index];
+                ary.insert(ary.end(), kt->second.begin(), kt->second.end());
+            }
+        }
+    }
+
+    shapeMap.swap(join.shapeMap);
 }
 
 // -------------------------------------------------------------------------
