@@ -385,8 +385,8 @@ TEST_F(ComplexGeoDataTest, setAndGetElementMap)  // NOLINT
     auto resultingElementMap = cgd().getElementMap();
 
     // Assert
-    EXPECT_TRUE(emptyElementMap.empty());
-    EXPECT_EQ(resultingElementMap.size(), vecMappedElements.size());
+    EXPECT_TRUE(emptyElementMap->empty());
+    EXPECT_EQ(resultingElementMap->size(), vecMappedElements.size());
 }
 
 TEST_F(ComplexGeoDataTest, getElementMapSize)  // NOLINT
