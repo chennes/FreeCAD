@@ -30,9 +30,10 @@
 
 #include "TopoShape.h"
 #include <TopAbs_ShapeEnum.hxx>
+#include <NCollection_IndexedMap.hxx>
 
 class BRepBuilderAPI_MakeShape;
-
+class TopTools_ShapeMapHasher;
 
 namespace Part
 {
@@ -110,36 +111,30 @@ private:
     void loadFromStream(Base::Reader &reader);
 
 private:
-    TopoShape _Shape;
-    std::string _Ver;
-    mutable int _HasherIndex = 0;
-    mutable bool _SaveHasher = false;
+    TopoShape _shape;
+    mutable int _hasherIndex = 0;
+    mutable bool _saveHasher = false;
 };
 
+/**
+ * The ShapeHistory is a mapping of an integer shape index representing an old shape to a list
+ * of shape indices representing the new shape(s) that are "Partners" of the original, for a
+ * given type of shape (e.g. VERTEX, EDGE, FACE, etc.). The list may be empty (as in the case where
+ * some operation caused the removal of a shape). The integer index represents the entry in
+ * OpenCASCADE's TopExp::MapShapes map.
+ */
 struct PartExport ShapeHistory {
+
+
     /**
-    * @brief MapList: key is index of subshape (of type 'type') in source
-    * shape. Value is list of indexes of subshapes in result shape.
-    */
+     * @brief MapList: key is index of sub-shape (of type 'type') in source shape. Value is list of
+     * indices of sub-shapes in resulting shape.
+     */
     using MapList = std::map<int, std::vector<int> >;
     using List = std::vector<int>;
 
     TopAbs_ShapeEnum type;
     MapList shapeMap;
-
-    ShapeHistory() {}
-    /**
-     * Build a history of changes
-     * MakeShape: The operation that created the changes, e.g. BRepAlgoAPI_Common
-     * type: The type of object we are interested in, e.g. TopAbs_FACE
-     * newS: The new shape that was created by the operation
-     * oldS: The original shape prior to the operation
-     */
-    ShapeHistory(BRepBuilderAPI_MakeShape& mkShape, TopAbs_ShapeEnum type,
-                 const TopoDS_Shape& newS, const TopoDS_Shape& oldS);
-    void reset(BRepBuilderAPI_MakeShape& mkShape, TopAbs_ShapeEnum type,
-               const TopoDS_Shape& newS, const TopoDS_Shape& oldS);
-    void join(const ShapeHistory &newH);
 };
 
 class PartExport PropertyShapeHistory : public App::PropertyLists
@@ -239,35 +234,6 @@ public:
 private:
     std::vector<FilletElement> _lValueList;
 };
-
-
-class PartExport PropertyShapeCache: public App::Property {
-    TYPESYSTEM_HEADER_WITH_OVERRIDE();
-public:
-    virtual App::Property *Copy(void) const override;
-
-    virtual void Paste(const App::Property &) override;
-
-    virtual PyObject *getPyObject() override;
-
-    virtual void setPyObject(PyObject *value) override;
-
-    virtual void Save (Base::Writer &writer) const override;
-
-    virtual void Restore(Base::XMLReader &reader) override;
-
-    static PropertyShapeCache *get(const App::DocumentObject *obj, bool create);
-    static bool getShape(const App::DocumentObject *obj, TopoShape &shape, const char *subname=0);
-    static void setShape(const App::DocumentObject *obj, const TopoShape &shape, const char *subname=0);
-
-private:
-    void slotChanged(const App::DocumentObject &, const App::Property &prop);
-
-private:
-    std::unordered_map<std::string, TopoShape> cache;
-    boost::signals2::scoped_connection connChanged;
-};
-
 
 } //namespace Part
 
