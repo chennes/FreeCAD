@@ -52,8 +52,6 @@ using BoundBox3d = BoundBox3<double>;
 namespace Data
 {
 
-struct MappedChildElements;
-
 /** Segments
  *  Sub-element type of the ComplexGeoData type
  *  It is used to split an object in further sub-parts.
@@ -278,6 +276,10 @@ public:
 
     /** Flush an internal buffering for element mapping */
     virtual void flushElementMap() const;
+
+    void setMappedChildElements(const std::vector<ElementMap::MappedChildElements> & children);
+    std::vector<ElementMap::MappedChildElements> getMappedChildElements() const;
+
     //@}
 
 protected:

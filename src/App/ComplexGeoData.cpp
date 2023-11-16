@@ -296,6 +296,23 @@ void ComplexGeoData::flushElementMap() const
 {
 }
 
+void ComplexGeoData::setMappedChildElements(const std::vector<Data::ElementMap::MappedChildElements> & children)
+{
+    // DO NOT reset element map if there is one. Because we allow mixing child
+    // mapping and normal mapping
+    if (!_elementMap)
+        resetElementMap(std::make_shared<ElementMap>());
+
+    _elementMap->addChildElements(Tag, children);
+}
+
+std::vector<Data::ElementMap::MappedChildElements> ComplexGeoData::getMappedChildElements() const
+{
+    if (!_elementMap)
+        return {};
+    return _elementMap->getChildElements();
+}
+
 void ComplexGeoData::setElementMap(const std::vector<MappedElement> &map) {
     _elementMap = std::make_shared<Data::ElementMap>(); // Get rid of the old one, if any, but make
                                                         // sure the memory exists for the new data.
