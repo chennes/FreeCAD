@@ -105,3 +105,57 @@ TEST_F(TopoShapeMakeShapeWithElementMapTests, emptySourceShapes)
             &modifiedShape.makeShapeWithElementMap(source.getShape(), *Mapper(), emptySources));
     }
 }
+
+TEST_F(TopoShapeMakeShapeWithElementMapTests, nonMappableSources)
+{
+    // Arrange
+    auto [cube1, cube2] = TopoShapeExpansionHelpers::CreateTwoCubes();
+    std::vector<Part::TopoShape> sources {cube1, cube2};
+
+    // Act and assert
+    for (auto& source : sources) {
+        size_t canMap = 0;
+        for (const auto& mappableSource : sources) {
+            if (source.canMapElement(mappableSource)) {
+                ++canMap;
+            }
+        }
+
+        if (canMap == 0U) {
+            EXPECT_EQ(&source,
+                      &source.makeShapeWithElementMap(source.getShape(), *Mapper(), sources));
+        }
+    }
+}
+
+TEST_F(TopoShapeMakeShapeWithElementMapTests, findShapeInElementMap)
+{
+    // Arrange
+    auto [cube1, cube2] = TopoShapeExpansionHelpers::CreateTwoCubes();
+    std::vector<Part::TopoShape> sources {cube1, cube2};
+    sources[0].Tag = 1;
+    sources[1].Tag = 2;
+    Part::TopoShape cmpdShape;
+    cmpdShape.makeElementCompound(sources);
+
+    // Act and assert
+    for (const auto& source : sources) {
+        std::vector<Part::TopoShape> tmpSources {source};
+        for (const auto& subSource : sources) {
+            Part::TopoShape tmpShape {source.getShape()};
+            tmpShape.makeShapeWithElementMap(source.getShape(), *Mapper(), tmpSources);
+            if (&source == &subSource) {
+                EXPECT_NE(tmpShape.findShape(subSource.getShape()),
+                          0);  // if tmpShape uses, for example, cube1 and we search for cube1 than
+                               // we should find it
+            }
+            else {
+                EXPECT_EQ(tmpShape.findShape(subSource.getShape()),
+                          0);  // if tmpShape uses, for example, cube1 and we search for cube2 than
+                               // we shouldn't find it
+            }
+        }
+        EXPECT_NE(cmpdShape.findShape(source.getShape()),
+                  0);  // as cmpdShape is made with cube1 and cube2 we should find both of them
+    }
+}
