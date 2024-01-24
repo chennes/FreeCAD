@@ -133,8 +133,10 @@ TEST_F(TopoShapeMakeShapeWithElementMapTests, findShapeInElementMap)
     // Arrange
     auto [cube1, cube2] = TopoShapeExpansionHelpers::CreateTwoCubes();
     std::vector<Part::TopoShape> sources {cube1, cube2};
-    sources[0].Tag = 1;
-    sources[1].Tag = 2;
+    sources[0].Tag = 1;  // setting Tag explicitly otherwise it is likely that this test will be
+                         // more or less the same of nonMappableSources
+    sources[1].Tag = 2;  // setting Tag explicitly otherwise it is likely that this test will be
+                         // more or less the same of nonMappableSources
     Part::TopoShape cmpdShape;
     cmpdShape.makeElementCompound(sources);
 
