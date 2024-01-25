@@ -7,7 +7,7 @@
 #include "src/App/InitApplication.h"
 #include "TopoShapeExpansionHelpers.h"
 #include <Mod/Part/App/TopoShape.h>
-
+// #include <MappedName.h>
 #include <TopoDS_Vertex.hxx>
 
 class TopoShapeMakeShapeWithElementMapTests: public ::testing::Test
@@ -128,7 +128,6 @@ TEST_F(TopoShapeMakeShapeWithElementMapTests, mapCompoundMap)
     EXPECT_EQ(postElements[IndexedName("Edge", 1)], MappedName("Edge1;MAK;:H:4,E;MAK;:H1:f,E"));
     EXPECT_EQ(postElements[IndexedName("Edge", 13)], MappedName("Edge1;MAK;:H2:4,E"));
 }
-
 
 // TEST_F(TopoShapeMakeShapeWithElementMapTests, mapCompSolid)
 // TEST_F(TopoShapeMakeShapeWithElementMapTests, mapOffsetCubes)
