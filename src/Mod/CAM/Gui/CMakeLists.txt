@@ -19,11 +19,11 @@ set(PathGui_LIBS
     FreeCADGui
 )
 
-set (Path_TR_QRC ${CMAKE_CURRENT_BINARY_DIR}/Resources/Path_translation.qrc)
+set (Path_TR_QRC ${CMAKE_CURRENT_BINARY_DIR}/Resources/CAM_translation.qrc)
 qt_find_and_add_translation(QM_SRCS "Resources/translations/*_*.ts"
     ${CMAKE_CURRENT_BINARY_DIR}/Resources/translations)
 qt_create_resource_file(${Path_TR_QRC} ${QM_SRCS})
-qt_add_resources(PathResource_SRCS Resources/Path.qrc ${Path_TR_QRC})
+qt_add_resources(PathResource_SRCS Resources/CAM.qrc ${Path_TR_QRC})
 
 SOURCE_GROUP("Resources" FILES ${PathResource_SRCS})
 
@@ -37,7 +37,7 @@ SET(PathGui_SRCS_Module
     Command.cpp
     AppPathGui.cpp
     AppPathGuiPy.cpp
-    Resources/Path.qrc
+    Resources/CAM.qrc
     PreCompiled.cpp
     PreCompiled.h
     DlgSettingsPathColor.ui
