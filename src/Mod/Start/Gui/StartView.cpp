@@ -131,7 +131,7 @@ StartView::StartView(Gui::Document* pcDocument, QWidget* parent)
         layout->addLayout(firstStartRegion);
 
         // Try to further differentiate the checkbox below, when the First Start box is shown
-        auto line = new QFrame();
+        auto line = gsl::owner<QFrame*>(new QFrame());
         line->setFrameShape(QFrame::HLine);
         line->setFrameShadow(QFrame::Sunken);
         layout->addWidget(line);
@@ -142,7 +142,7 @@ StartView::StartView(Gui::Document* pcDocument, QWidget* parent)
     bool showOnStartup = hGrp->GetBool("ShowOnStartup", true);
     _showOnStartupCheckBox->setCheckState(showOnStartup ? Qt::CheckState::Unchecked
                                                         : Qt::CheckState::Checked);
-    connect(_showOnStartupCheckBox, &QCheckBox::toggled, this, &StartView::showOnStartupChanged);
+    connect(_showOnStartupCheckBox, &QCheckBox::toggled, &StartView::showOnStartupChanged);
     layout->addWidget(_showOnStartupCheckBox);
 
     _newFileLabel = gsl::owner<QLabel*>(new QLabel());
@@ -223,7 +223,7 @@ void StartView::configureNewFileButtons(QLayout* layout) const
     connect(arch, &QPushButton::clicked, this, &StartView::newArchFile);
 }
 
-QString StartView::fileCardStyle() const
+QString StartView::fileCardStyle()
 {
     if (!qApp->styleSheet().isEmpty()) {
         return {};
@@ -438,7 +438,6 @@ void StartView::retranslateUi()
     _examplesLabel->setText(h1Start + tr("Examples") + h1End);
     _recentFilesLabel->setText(h1Start + tr("Recent Files") + h1End);
 
-    QString application = QString::fromUtf8(App::Application::Config()["ExeName"].c_str());
     _showOnStartupCheckBox->setText(
         tr("Don't show this Start page again (start with blank screen)"));
 }

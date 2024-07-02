@@ -87,8 +87,8 @@ protected:
 
     void fileCardSelected(const QModelIndex& index);
 
-    void showOnStartupChanged(bool checked);
-    QString fileCardStyle() const;
+    static void showOnStartupChanged(bool checked);
+    static QString fileCardStyle();
 
 private:
     void retranslateUi();
