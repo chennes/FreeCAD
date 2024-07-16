@@ -259,6 +259,9 @@ public:
                               long masterTag,
                               const ElementIDRefs* sid = nullptr,
                               bool overwrite = false) {
+        if (!_elementMap) {
+            resetElementMap(std::make_shared<Data::ElementMap>());
+        }
         return _elementMap -> setElementName(element, name, masterTag, sid, overwrite);
     }
 
