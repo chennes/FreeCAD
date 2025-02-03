@@ -53,7 +53,7 @@ public:
     App::PropertyBool TraceSupport;
 
     static void getFilteredReferences(const App::PropertyLinkSubList* prop, App::GeoFeature*& object, std::vector< std::string >& subobjects);
-    static Part::TopoShape buildShapeFromReferences(App::GeoFeature* obj, std::vector< std::string > subs);
+    static Part::TopoShape buildShapeFromReferences(App::GeoFeature* obj, const std::vector< std::string >& subs);
 
     const char* getViewProviderName() const override {
         return "PartDesignGui::ViewProviderShapeBinder";
