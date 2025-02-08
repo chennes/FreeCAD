@@ -36,6 +36,10 @@
 #endif
 
 #include "DisplayedFilesModel.h"
+
+#include <QThreadPool>
+
+#include "FileUtilities.h"
 #include <App/Application.h>
 #include <App/ProjectFile.h>
 #include <Base/FileInfo.h>
@@ -89,73 +93,6 @@ FileStats fileInfoFromFreeCADFile(const std::string& path)
     return result;
 }
 
-std::string getThumbnailsImage()
-{
-    return "thumbnails/Thumbnail.png";
-}
-
-QString getThumbnailsName()
-{
-#if defined(Q_OS_LINUX)
-    return QString::fromLatin1("thumbnails/normal");
-#else
-    return QString::fromLatin1("FreeCADStartThumbnails");
-#endif
-}
-
-QDir getThumnailsParentDir()
-{
-    return {QStandardPaths::writableLocation(QStandardPaths::GenericCacheLocation)};
-}
-
-QString getThumbnailsDir()
-{
-    QDir dir = getThumnailsParentDir();
-    return dir.absoluteFilePath(getThumbnailsName());
-}
-
-void createThumbnailsDir()
-{
-    QString name = getThumbnailsName();
-    QDir dir(getThumnailsParentDir());
-    if (!dir.exists(name)) {
-        dir.mkpath(name);
-    }
-}
-
-QString getMD5Hash(const std::string& path)
-{
-    // Use MD5 hash as specified here:
-    // https://specifications.freedesktop.org/thumbnail-spec/0.8.0/thumbsave.html
-    QUrl url(QString::fromStdString(path));
-    url.setScheme(QString::fromLatin1("file"));
-    QCryptographicHash hash(QCryptographicHash::Md5);
-    hash.addData(url.toEncoded());
-    QByteArray ba = hash.result().toHex();
-    return QString::fromLatin1(ba);
-}
-
-QString getUniquePNG(const std::string& path)
-{
-    QDir dir = getThumbnailsDir();
-    QString md5 = getMD5Hash(path) + QLatin1String(".png");
-    return dir.absoluteFilePath(md5);
-}
-
-bool useCachedPNG(const std::string& image, const std::string& project)
-{
-    Base::FileInfo f1(image);
-    Base::FileInfo f2(project);
-    if (!f1.exists()) {
-        return false;
-    }
-    if (!f2.exists()) {
-        return false;
-    }
-
-    return f1.lastModified() > f2.lastModified();
-}
-
 /// Load the thumbnail image data (if any) that is stored in an FCStd file.
 /// \returns The image bytes, or an empty QByteArray (if no thumbnail was stored)
 QByteArray loadFCStdThumbnail(const std::string& pathToFCStdFile)
@@ -183,39 +120,6 @@ QByteArray loadFCStdThumbnail(const std::string& pathToFCStdFile)
         }
         catch (...) {
         }
-    }
-    return {};
-}
-
-/// Attempt to generate a thumbnail image from a file using f3d or load from cache
-/// \returns The image bytes, or an empty QByteArray (if thumbnail generation fails)
-QByteArray getF3dThumbnail(const std::string& pathToFile)
-{
-    QString thumbnailPath = getUniquePNG(pathToFile);
-    if (!useCachedPNG(thumbnailPath.toStdString(), pathToFile)) {
-        ParameterGrp::handle hGrp = App::GetApplication().GetParameterGroupByPath(
-            "User parameter:BaseApp/Preferences/Mod/Start");
-        auto f3d = QString::fromUtf8(hGrp->GetASCII("f3d", "f3d").c_str());
-        const int resolution = 128;
-        QStringList args;
-        args << QLatin1String("--config=thumbnail") << QLatin1String("--load-plugins=occt")
-             << QLatin1String("--verbose=quiet") << QLatin1String("--output=") + thumbnailPath
-             << QLatin1String("--resolution=") + QString::number(resolution) + QLatin1String(",")
-                + QString::number(resolution)
-             << QString::fromStdString(pathToFile);
-
-        QProcess process;
-        process.start(f3d, args);
-        process.waitForFinished();
-        if (process.exitCode() != 0) {
-            return {};
-        }
-    }
-
-    QFile thumbnailFile(thumbnailPath);
-    if (thumbnailFile.exists()) {
-        thumbnailFile.open(QIODevice::OpenModeFlag::ReadOnly);
-        return thumbnailFile.readAll();
     }
     return {};
 }
@@ -329,10 +233,12 @@ void DisplayedFilesModel::addFile(const QString& filePath)
         }
     }
     else {
-        auto thumbnail = getF3dThumbnail(filePath.toStdString());
-        if (!thumbnail.isEmpty()) {
-            _imageCache.insert(filePath, thumbnail);
-        }
+        auto runner = new ThumbnailSource(filePath);
+        connect(runner->signals(),
+                &ThumbnailSourceSignals::thumbnailAvailable,
+                this,
+                &DisplayedFilesModel::processNewThumbnail);
+        QThreadPool::globalInstance()->start(runner);
     }
 }
 
@@ -356,4 +262,11 @@ QHash<int, QByteArray> DisplayedFilesModel::roleNames() const
         std::make_pair(int(DisplayedFilesModelRoles::size), "size"),
     };
     return nameMap;
+}
+
+void DisplayedFilesModel::processNewThumbnail(const QString& file, const QByteArray& thumbnail)
+{
+    if (!thumbnail.isEmpty()) {
+        _imageCache.insert(file, thumbnail);
+    }
 }

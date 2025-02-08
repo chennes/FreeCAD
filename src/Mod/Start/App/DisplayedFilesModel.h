@@ -28,6 +28,7 @@
 #include <Base/Parameter.h>
 
 #include "../StartGlobal.h"
+#include "ThumbnailSource.h"
 
 namespace Start
 {
@@ -73,6 +74,9 @@ protected:
     /// indicating when some piece of information about the files has changed. Does NOT generate
     /// a new list of files, only re-caches the existing ones.
     void reCacheFileInfo();
+
+    /// Process a new thumbnail produces by some sort of worker thread
+    void processNewThumbnail(const QString& file, const QByteArray& thumbnail);
 
 private:
     std::vector<FileStats> _fileInfoCache;
