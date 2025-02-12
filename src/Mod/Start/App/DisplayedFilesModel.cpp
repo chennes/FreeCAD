@@ -93,6 +93,7 @@ FileStats fileInfoFromFreeCADFile(const std::string& path)
     return result;
 }
 
+
 /// Load the thumbnail image data (if any) that is stored in an FCStd file.
 /// \returns The image bytes, or an empty QByteArray (if no thumbnail was stored)
 QByteArray loadFCStdThumbnail(const std::string& pathToFCStdFile)
