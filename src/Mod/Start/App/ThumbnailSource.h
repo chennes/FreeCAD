@@ -27,7 +27,11 @@
 #include <QByteArray>
 #include <QRunnable>
 #include <QString>
+#include <QStringList>
 #include <QObject>
+
+#include <App/Application.h>
+#include <Base/Parameter.h>
 
 namespace Start
 {
@@ -44,15 +48,21 @@ Q_SIGNALS:
 class ThumbnailSource: public QRunnable
 {
 public:
-    explicit ThumbnailSource(QString file);
+    explicit ThumbnailSource(QString file,
+                             ParameterGrp::handle = App::GetApplication().GetParameterGroupByPath(
+                                 "User parameter:BaseApp/Preferences/Mod/Start"));
 
     void run() override;
 
     ThumbnailSourceSignals* signals();
 
+protected:
+    std::tuple<QString, QStringList> createF3DCall(const QString& thumbnailPath) const;
+
 private:
     QString _file;
     ThumbnailSourceSignals _signals;
+    ParameterGrp::handle _startParameterGrp;
 };
 
 }  // namespace Start
