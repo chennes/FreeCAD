@@ -24,6 +24,8 @@
 #ifndef FREECAD_THUMBNAILSOURCE_H
 #define FREECAD_THUMBNAILSOURCE_H
 
+#include "../StartGlobal.h"
+
 #include <QByteArray>
 #include <QRunnable>
 #include <QString>
@@ -36,7 +38,7 @@
 namespace Start
 {
 
-class ThumbnailSourceSignals: public QObject
+class StartExport ThumbnailSourceSignals: public QObject
 {
     Q_OBJECT
 public:
@@ -45,7 +47,7 @@ Q_SIGNALS:
     void thumbnailAvailable(const QString& file, const QByteArray& data);
 };
 
-class ThumbnailSource: public QRunnable
+class StartExport ThumbnailSource: public QRunnable
 {
 public:
     explicit ThumbnailSource(QString file,

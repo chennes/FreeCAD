@@ -24,6 +24,8 @@
 #ifndef FREECAD_FILEUTILITIES_H
 #define FREECAD_FILEUTILITIES_H
 
+#include "../StartGlobal.h"
+
 #include <string>
 #include <Base/FileInfo.h>
 #include <QString>
@@ -32,21 +34,21 @@
 namespace Start
 {
 
-std::string getThumbnailsImage();
+StartExport std::string getThumbnailsImage();
 
-QString getThumbnailsName();
+StartExport QString getThumbnailsName();
 
-QDir getThumbnailsParentDir();
+StartExport QDir getThumbnailsParentDir();
 
-QString getThumbnailsDir();
+StartExport QString getThumbnailsDir();
 
-void createThumbnailsDir();
+StartExport void createThumbnailsDir();
 
-QString getMD5Hash(const std::string& path);
+StartExport QString getMD5Hash(const std::string& path);
 
-QString getUniquePNG(const std::string& path);
+StartExport QString getUniquePNG(const std::string& path);
 
-bool useCachedPNG(const std::string& image, const std::string& project);
+StartExport bool useCachedPNG(const std::string& image, const std::string& project);
 
 }  // namespace Start
 
