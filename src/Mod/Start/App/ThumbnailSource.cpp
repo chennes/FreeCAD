@@ -48,14 +48,14 @@ void ThumbnailSource::run()
 {
     const QString thumbnailPath = getUniquePNG(_file.toStdString());
     if (!useCachedPNG(thumbnailPath.toStdString(), _file.toStdString())) {
-        Base::Console().Log("Running ThumbnailSource f3d cache update for %s\n", _file.toStdString().c_str());
+        Base::Console().Log("Running ThumbnailSource f3d cache update for %s\n",
+                            _file.toStdString().c_str());
         const ParameterGrp::handle hGrp = App::GetApplication().GetParameterGroupByPath(
             "User parameter:BaseApp/Preferences/Mod/Start");
         const auto f3d = QString::fromUtf8(hGrp->GetASCII("f3d", "f3d").c_str());
         constexpr int resolution = 128;
         QStringList args;
-        args << QLatin1String("--load-plugins=occt")
-             << QLatin1String("--output=") + thumbnailPath
+        args << QLatin1String("--load-plugins=occt") << QLatin1String("--output=") + thumbnailPath
              << QLatin1String("--resolution=") + QString::number(resolution) + QLatin1String(",")
                 + QString::number(resolution)
              << _file;
