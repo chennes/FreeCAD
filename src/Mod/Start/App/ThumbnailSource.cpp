@@ -30,6 +30,7 @@
 #include "FileUtilities.h"
 
 #include <App/Application.h>
+#include <Base/Console.h>
 
 using namespace Start;
 
@@ -47,13 +48,14 @@ void ThumbnailSource::run()
 {
     const QString thumbnailPath = getUniquePNG(_file.toStdString());
     if (!useCachedPNG(thumbnailPath.toStdString(), _file.toStdString())) {
+        Base::Console().Log("Running ThumbnailSource f3d cache update for %s\n", _file.toStdString().c_str());
         const ParameterGrp::handle hGrp = App::GetApplication().GetParameterGroupByPath(
             "User parameter:BaseApp/Preferences/Mod/Start");
         const auto f3d = QString::fromUtf8(hGrp->GetASCII("f3d", "f3d").c_str());
         constexpr int resolution = 128;
         QStringList args;
-        args << QLatin1String("--config=thumbnail") << QLatin1String("--load-plugins=occt")
-             << QLatin1String("--verbose=quiet") << QLatin1String("--output=") + thumbnailPath
+        args << QLatin1String("--load-plugins=occt")
+             << QLatin1String("--output=") + thumbnailPath
              << QLatin1String("--resolution=") + QString::number(resolution) + QLatin1String(",")
                 + QString::number(resolution)
              << _file;
@@ -62,8 +64,10 @@ void ThumbnailSource::run()
         process.start(f3d, args);
         process.waitForFinished();
         if (process.exitCode() != 0) {
+            Base::Console().Log("  -> f3d call failed for %s\n", _file.toStdString().c_str());
             return;
         }
+        Base::Console().Log("  -> f3d call completed for %s\n", _file.toStdString().c_str());
     }
 
     if (QFile thumbnailFile(thumbnailPath); thumbnailFile.exists()) {

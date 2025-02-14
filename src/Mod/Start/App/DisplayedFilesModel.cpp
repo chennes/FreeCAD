@@ -267,6 +267,7 @@ QHash<int, QByteArray> DisplayedFilesModel::roleNames() const
 
 void DisplayedFilesModel::processNewThumbnail(const QString& file, const QByteArray& thumbnail)
 {
+    Base::Console().Log("Processing new thumbnail for %s\n", file.toStdString().c_str());
     if (!thumbnail.isEmpty()) {
         _imageCache.insert(file, thumbnail);
     }
