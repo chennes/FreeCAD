@@ -26,10 +26,6 @@ MACRO (fc_copy_sources target_name outpath)
 			MAIN_DEPENDENCY "${infile}"
 		)
 	endforeach(it)
-	ADD_CUSTOM_COMMAND(
-		TARGET    ${target_name}
-		DEPENDS   ${ARGN}
-	)
 ENDMACRO(fc_copy_sources)
 
 MACRO (fc_copy_file_if_different inputfile outputfile)
@@ -82,10 +78,6 @@ MACRO (fc_target_copy_resource target_name inpath outpath)
 			MAIN_DEPENDENCY "${infile}"
 		)
 	endforeach(it)
-	ADD_CUSTOM_COMMAND(
-		TARGET    ${target_name}
-		DEPENDS   ${ARGN}
-	)
 ENDMACRO(fc_target_copy_resource)
 
 MACRO (fc_target_copy_resource_flat target_name inpath outpath)
@@ -117,10 +109,6 @@ MACRO (fc_target_copy_resource_flat target_name inpath outpath)
 			MAIN_DEPENDENCY "${infile}"
 		)
 	endforeach(it)
-	ADD_CUSTOM_COMMAND(
-		TARGET    ${target_name}
-		DEPENDS   ${ARGN}
-	)
 ENDMACRO(fc_target_copy_resource_flat)
 
 # It would be a bit cleaner to generate these files in ${CMAKE_CURRENT_BINARY_DIR}
@@ -138,13 +126,13 @@ macro(generate_from_xml BASE_NAME)
     if(NOT EXISTS "${SOURCE_CPP_PATH}")
         # assures the source files are generated at least once
         message(STATUS "${SOURCE_CPP_PATH}")
-        execute_process(COMMAND "${PYTHON_EXECUTABLE}" "${TOOL_NATIVE_PATH}" --outputPath "${OUTPUT_NATIVE_PATH}" "${SOURCE_NATIVE_PATH}"
+        execute_process(COMMAND "${Python3_EXECUTABLE}" "${TOOL_NATIVE_PATH}" --outputPath "${OUTPUT_NATIVE_PATH}" "${SOURCE_NATIVE_PATH}"
                         WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
         )
     endif()
     add_custom_command(
         OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${BASE_NAME}.h" "${CMAKE_CURRENT_BINARY_DIR}/${BASE_NAME}.cpp"
-        COMMAND ${PYTHON_EXECUTABLE} "${TOOL_NATIVE_PATH}" --outputPath "${OUTPUT_NATIVE_PATH}" ${BASE_NAME}.xml
+        COMMAND ${Python3_EXECUTABLE} "${TOOL_NATIVE_PATH}" --outputPath "${OUTPUT_NATIVE_PATH}" ${BASE_NAME}.xml
         MAIN_DEPENDENCY "${BASE_NAME}.xml"
         DEPENDS
         "${CMAKE_SOURCE_DIR}/src/Tools/bindings/templates/templateClassPyExport.py"
@@ -160,7 +148,7 @@ macro(generate_from_py BASE_NAME OUTPUT_FILE)
 		file(TO_NATIVE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/${BASE_NAME}.py" SOURCE_NATIVE_PATH)
 		add_custom_command(
 		 		OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${OUTPUT_FILE}"
-		 		COMMAND "${PYTHON_EXECUTABLE}" "${TOOL_NATIVE_PATH}" "${SOURCE_NATIVE_PATH}" "${OUTPUT_FILE}"
+		 		COMMAND "${Python3_EXECUTABLE}" "${TOOL_NATIVE_PATH}" "${SOURCE_NATIVE_PATH}" "${OUTPUT_FILE}"
 				MAIN_DEPENDENCY "${CMAKE_CURRENT_SOURCE_DIR}/${BASE_NAME}.py"
 				DEPENDS "${TOOL_PATH}"
 				WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
@@ -173,7 +161,7 @@ macro(generate_from_any INPUT_FILE OUTPUT_FILE VARIABLE)
 		file(TO_NATIVE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/${INPUT_FILE}" SOURCE_NATIVE_PATH)
 		add_custom_command(
 		 		OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${OUTPUT_FILE}"
-		 		COMMAND "${PYTHON_EXECUTABLE}" "${TOOL_NATIVE_PATH}" "${SOURCE_NATIVE_PATH}" "${OUTPUT_FILE}" "${VARIABLE}"
+		 		COMMAND "${Python3_EXECUTABLE}" "${TOOL_NATIVE_PATH}" "${SOURCE_NATIVE_PATH}" "${OUTPUT_FILE}" "${VARIABLE}"
 				MAIN_DEPENDENCY "${CMAKE_CURRENT_SOURCE_DIR}/${INPUT_FILE}"
 				DEPENDS "${TOOL_PATH}"
 				WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
@@ -279,7 +267,7 @@ ENDMACRO(SET_PYTHON_PREFIX_SUFFIX)
 # install directory, and then appends the package name and  "/include" to the end
 macro(find_pip_package PACKAGE)
 	execute_process(
-			COMMAND ${PYTHON_EXECUTABLE} -m pip show ${PACKAGE}
+			COMMAND ${Python3_EXECUTABLE} -m pip show ${PACKAGE}
 			RESULT_VARIABLE FAILURE
 			OUTPUT_VARIABLE PRINT_OUTPUT
 	)
