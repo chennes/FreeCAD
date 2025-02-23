@@ -74,6 +74,8 @@ std::tuple<QString, QStringList> ThumbnailSource::createF3DCall(const QString& t
     constexpr int resolution = 128;
     QStringList args;
     args << QLatin1String("--load-plugins=occt") << QLatin1String("--output=") + thumbnailPath
+         << QLatin1String("--filename=0") << QLatin1String("--grid=0")
+         << QLatin1String("--no-background") << QLatin1String("--max-size=100")
          << QLatin1String("--resolution=") + QString::number(resolution) + QLatin1String(",")
             + QString::number(resolution)
          << _file;
