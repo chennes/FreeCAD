@@ -171,11 +171,6 @@
 FC_LOG_LEVEL_INIT("App", true, true)
 
 using namespace App;
-using namespace Base;
-using namespace std;
-using namespace boost;
-using namespace boost::program_options;
-using Base::FileInfo;
 namespace sp = std::placeholders;
 
 //==========================================================================
@@ -406,19 +401,19 @@ void Application::setupPythonException(PyObject* module)
         return exception;
     };
 
-    PyExc_FC_GeneralError = setup("FreeCADError", PyExc_RuntimeError);
-    PyExc_FC_FreeCADAbort = setup("FreeCADAbort", PyExc_BaseException);
-    PyExc_FC_XMLBaseException = setup("XMLBaseException", PyExc_Exception);
-    PyExc_FC_XMLParseException = setup("XMLParseException", PyExc_FC_XMLBaseException);
-    PyExc_FC_XMLAttributeError = setup("XMLAttributeError", PyExc_FC_XMLBaseException);
-    PyExc_FC_UnknownProgramOption = setup("UnknownProgramOption", PyExc_BaseException);
-    PyExc_FC_BadFormatError = setup("BadFormatError", PyExc_FC_GeneralError);
-    PyExc_FC_BadGraphError = setup("BadGraphError", PyExc_FC_GeneralError);
-    PyExc_FC_ExpressionError = setup("ExpressionError", PyExc_FC_GeneralError);
-    PyExc_FC_ParserError = setup("ParserError", PyExc_FC_GeneralError);
-    PyExc_FC_CADKernelError = setup("CADKernelError", PyExc_FC_GeneralError);
-    PyExc_FC_PropertyError = setup("PropertyError", PyExc_AttributeError);
-    PyExc_FC_AbortIOException = setup("AbortIOException", PyExc_BaseException);
+    Base::PyExc_FC_GeneralError = setup("FreeCADError", PyExc_RuntimeError);
+    Base::PyExc_FC_FreeCADAbort = setup("FreeCADAbort", PyExc_BaseException);
+    Base::PyExc_FC_XMLBaseException = setup("XMLBaseException", PyExc_Exception);
+    Base::PyExc_FC_XMLParseException = setup("XMLParseException", Base::PyExc_FC_XMLBaseException);
+    Base::PyExc_FC_XMLAttributeError = setup("XMLAttributeError", Base::PyExc_FC_XMLBaseException);
+    Base::PyExc_FC_UnknownProgramOption = setup("UnknownProgramOption", PyExc_BaseException);
+    Base::PyExc_FC_BadFormatError = setup("BadFormatError", Base::PyExc_FC_GeneralError);
+    Base::PyExc_FC_BadGraphError = setup("BadGraphError", Base::PyExc_FC_GeneralError);
+    Base::PyExc_FC_ExpressionError = setup("ExpressionError", Base::PyExc_FC_GeneralError);
+    Base::PyExc_FC_ParserError = setup("ParserError", Base::PyExc_FC_GeneralError);
+    Base::PyExc_FC_CADKernelError = setup("CADKernelError", Base::PyExc_FC_GeneralError);
+    Base::PyExc_FC_PropertyError = setup("PropertyError", PyExc_AttributeError);
+    Base::PyExc_FC_AbortIOException = setup("AbortIOException", PyExc_BaseException);
 }
 
 //**************************************************************************
@@ -432,9 +427,9 @@ void Application::renameDocument(const char *OldName, const char *NewName)
     throw Base::RuntimeError("Renaming document internal name is no longer allowed!");
 }
 
-Document* Application::newDocument(const char * proposedName, const char * proposedLabel, DocumentCreateFlags CreateFlags)
+Document* Application::newDocument(const char * proposedName, const char * proposedLabel, DocumentInitFlags CreateFlags)
 {
-    bool isUsingDefaultName = Tools::isNullOrEmpty(proposedName);
+    bool isUsingDefaultName = Base::Tools::isNullOrEmpty(proposedName);
     // get a valid name anyway!
     if (isUsingDefaultName) {
         proposedName = "Unnamed";
@@ -451,7 +446,7 @@ Document* Application::newDocument(const char * proposedName, const char * propo
 
     // Determine the document's Label
     std::string label;
-    if (!Tools::isNullOrEmpty(proposedLabel)) {
+    if (!Base::Tools::isNullOrEmpty(proposedLabel)) {
         // If a label is supplied it is used even if not unique
         label = proposedLabel;
     }
@@ -534,7 +529,7 @@ bool Application::closeDocument(const char* name)
         setActiveDocument(static_cast<Document*>(nullptr));
     std::unique_ptr<Document> delDoc (pos->second);
     DocMap.erase( pos );
-    DocFileMap.erase(FileInfo(delDoc->FileName.getValue()).filePath());
+    DocFileMap.erase(Base::FileInfo(delDoc->FileName.getValue()).filePath());
 
     _objCount = -1;
 
@@ -669,9 +664,9 @@ public:
     }
 };
 
-Document* Application::openDocument(const char * FileName, DocumentCreateFlags createFlags) {
+Document* Application::openDocument(const char * FileName, DocumentInitFlags initFlags) {
     std::vector<std::string> filenames(1,FileName);
-    auto docs = openDocuments(filenames, nullptr, nullptr, nullptr, createFlags);
+    auto docs = openDocuments(filenames, nullptr, nullptr, nullptr, initFlags);
     if(!docs.empty())
         return docs.front();
     return nullptr;
@@ -684,17 +679,17 @@ Document *Application::getDocumentByPath(const char *path, PathMatchMode checkCa
         for(const auto &v : DocMap) {
             const auto &file = v.second->FileName.getStrValue();
             if(!file.empty())
-                DocFileMap[FileInfo(file.c_str()).filePath()] = v.second;
+                DocFileMap[Base::FileInfo(file.c_str()).filePath()] = v.second;
         }
     }
-    auto it = DocFileMap.find(FileInfo(path).filePath());
+    auto it = DocFileMap.find(Base::FileInfo(path).filePath());
     if(it != DocFileMap.end())
         return it->second;
 
     if (checkCanonical == PathMatchMode::MatchAbsolute)
         return nullptr;
 
-    std::string filepath = FileInfo(path).filePath();
+    std::string filepath = Base::FileInfo(path).filePath();
     QString canonicalPath = QFileInfo(QString::fromUtf8(path)).canonicalFilePath();
     for (const auto &v : DocMap) {
         QFileInfo fi(QString::fromUtf8(v.second->FileName.getValue()));
@@ -716,7 +711,7 @@ std::vector<Document*> Application::openDocuments(const std::vector<std::string>
                                                   const std::vector<std::string> *paths,
                                                   const std::vector<std::string> *labels,
                                                   std::vector<std::string> *errs,
-                                                  DocumentCreateFlags createFlags)
+                                                  DocumentInitFlags initFlags)
 {
     std::vector<Document*> res(filenames.size(), nullptr);
     if (filenames.empty())
@@ -780,7 +775,7 @@ std::vector<Document*> Application::openDocuments(const std::vector<std::string>
                         label = (*labels)[count].c_str();
                 }
 
-                auto doc = openDocumentPrivate(path, name.c_str(), label, isMainDoc, createFlags, std::move(objNames));
+                auto doc = openDocumentPrivate(path, name.c_str(), label, isMainDoc, initFlags, std::move(objNames));
                 FC_DURATION_PLUS(timing.d1,t1);
                 if (doc) {
                     timings[doc].d1 += timing.d1;
@@ -919,10 +914,10 @@ std::vector<Document*> Application::openDocuments(const std::vector<std::string>
 
 Document* Application::openDocumentPrivate(const char * FileName,
         const char *propFileName, const char *label,
-        bool isMainDoc, DocumentCreateFlags createFlags,
+        bool isMainDoc, DocumentInitFlags initFlags,
         std::vector<std::string> &&objNames)
 {
-    FileInfo File(FileName);
+    Base::FileInfo File(FileName);
 
     if (!File.exists()) {
         std::stringstream str;
@@ -983,7 +978,7 @@ Document* Application::openDocumentPrivate(const char * FileName,
 
     std::string name;
     if(propFileName != FileName) {
-        FileInfo fi(propFileName);
+        Base::FileInfo fi(propFileName);
         name = fi.fileNamePure();
     }else
         name = File.fileNamePure();
@@ -994,14 +989,15 @@ Document* Application::openDocumentPrivate(const char * FileName,
     if(!label)
         label = name.c_str();
 
-    Document* newDoc = newDocument(name.c_str(), label, createFlags);
+    initFlags.createView &= isMainDoc;
+    Document* newDoc = newDocument(name.c_str(), label, initFlags);
     newDoc->FileName.setValue(propFileName==FileName?File.filePath():propFileName);
 
     try {
         // read the document
         newDoc->restore(File.filePath().c_str(),true,objNames);
         if(!DocFileMap.empty())
-            DocFileMap[FileInfo(newDoc->FileName.getValue()).filePath()] = newDoc;
+            DocFileMap[Base::FileInfo(newDoc->FileName.getValue()).filePath()] = newDoc;
         return newDoc;
     }
     // if the project file itself is corrupt then
@@ -1163,8 +1159,8 @@ std::string Application::getUserMacroDir()
 std::string Application::getResourceDir()
 {
 #ifdef RESOURCEDIR
-    // #6892: Conda may inject null characters => remove them
-    auto path = std::string(RESOURCEDIR);
+    // #6892: Conda may inject null characters => remove them using c_str()
+    std::string path = std::string(RESOURCEDIR).c_str();
     path += PATHSEP;
     QDir dir(QString::fromStdString(path));
     if (dir.isAbsolute())
@@ -1178,8 +1174,8 @@ std::string Application::getResourceDir()
 std::string Application::getLibraryDir()
 {
 #ifdef LIBRARYDIR
-    // #6892: Conda may inject null characters => remove them
-    auto path = std::string(LIBRARYDIR);
+    // #6892: Conda may inject null characters => remove them using c_str()
+    std::string path = std::string(LIBRARYDIR).c_str();
     QDir dir(QString::fromStdString(path));
     if (dir.isAbsolute())
         return path;
@@ -1192,8 +1188,8 @@ std::string Application::getLibraryDir()
 std::string Application::getHelpDir()
 {
 #ifdef DOCDIR
-    // #6892: Conda may inject null characters => remove them
-    auto path = std::string(DOCDIR);
+    // #6892: Conda may inject null characters => remove them using c_str()
+    std::string path = std::string(DOCDIR).c_str();
     path += PATHSEP;
     QDir dir(QString::fromStdString(path));
     if (dir.isAbsolute())
@@ -1581,46 +1577,46 @@ void Application::slotChangedDocument(const App::Document& doc, const Property& 
     this->signalChangedDocument(doc, prop);
 }
 
-void Application::slotNewObject(const App::DocumentObject&O)
+void Application::slotNewObject(const App::DocumentObject& obj)
 {
-    this->signalNewObject(O);
+    this->signalNewObject(obj);
     _objCount = -1;
 }
 
-void Application::slotDeletedObject(const App::DocumentObject&O)
+void Application::slotDeletedObject(const App::DocumentObject& obj)
 {
-    this->signalDeletedObject(O);
+    this->signalDeletedObject(obj);
     _objCount = -1;
 }
 
-void Application::slotBeforeChangeObject(const DocumentObject& O, const Property& Prop)
+void Application::slotBeforeChangeObject(const App::DocumentObject& obj, const App::Property& prop)
 {
-    this->signalBeforeChangeObject(O, Prop);
+    this->signalBeforeChangeObject(obj, prop);
 }
 
-void Application::slotChangedObject(const App::DocumentObject&O, const App::Property& P)
+void Application::slotChangedObject(const App::DocumentObject& obj, const App::Property& prop)
 {
-    this->signalChangedObject(O,P);
+    this->signalChangedObject(obj, prop);
 }
 
-void Application::slotRelabelObject(const App::DocumentObject&O)
+void Application::slotRelabelObject(const App::DocumentObject& obj)
 {
-    this->signalRelabelObject(O);
+    this->signalRelabelObject(obj);
 }
 
-void Application::slotActivatedObject(const App::DocumentObject&O)
+void Application::slotActivatedObject(const App::DocumentObject& obj)
 {
-    this->signalActivatedObject(O);
+    this->signalActivatedObject(obj);
 }
 
-void Application::slotUndoDocument(const App::Document& d)
+void Application::slotUndoDocument(const App::Document& doc)
 {
-    this->signalUndoDocument(d);
+    this->signalUndoDocument(doc);
 }
 
-void Application::slotRedoDocument(const App::Document& d)
+void Application::slotRedoDocument(const App::Document& doc)
 {
-    this->signalRedoDocument(d);
+    this->signalRedoDocument(doc);
 }
 
 void Application::slotRecomputedObject(const DocumentObject& obj)
@@ -1638,19 +1634,19 @@ void Application::slotBeforeRecompute(const Document& doc)
     this->signalBeforeRecomputeDocument(doc);
 }
 
-void Application::slotOpenTransaction(const Document& d, string s)
+void Application::slotOpenTransaction(const Document &doc, std::string name)
 {
-    this->signalOpenTransaction(d, std::move(s));
+    this->signalOpenTransaction(doc, std::move(name));
 }
 
-void Application::slotCommitTransaction(const Document& d)
+void Application::slotCommitTransaction(const Document& doc)
 {
-    this->signalCommitTransaction(d);
+    this->signalCommitTransaction(doc);
 }
 
-void Application::slotAbortTransaction(const Document& d)
+void Application::slotAbortTransaction(const Document& doc)
 {
-    this->signalAbortTransaction(d);
+    this->signalAbortTransaction(doc);
 }
 
 void Application::slotStartSaveDocument(const App::Document& doc, const std::string& filename)
@@ -1664,9 +1660,9 @@ void Application::slotFinishSaveDocument(const App::Document& doc, const std::st
     this->signalFinishSaveDocument(doc, filename);
 }
 
-void Application::slotChangePropertyEditor(const App::Document &doc, const App::Property &prop)
+void Application::slotChangePropertyEditor(const App::Document& doc, const App::Property& prop)
 {
-    this->signalChangePropertyEditor(doc,prop);
+    this->signalChangePropertyEditor(doc, prop);
 }
 
 //**************************************************************************
@@ -2214,20 +2210,20 @@ void Application::initTypes()
 
 namespace {
 
-void parseProgramOptions(int ac, char ** av, const string& exe, variables_map& vm)
+void parseProgramOptions(int ac, char ** av, const std::string& exe, boost::program_options::variables_map& vm)
 {
     // Declare a group of options that will be
     // allowed only on the command line
-    options_description generic("Generic options");
+    boost::program_options::options_description generic("Generic options");
     generic.add_options()
     ("version,v", "Prints version string")
     ("verbose", "Prints verbose version string")
     ("help,h", "Prints help message")
     ("console,c", "Starts in console mode")
-    ("response-file", value<string>(),"Can be specified with '@name', too")
+    ("response-file", boost::program_options::value<std::string>(),"Can be specified with '@name', too")
     ("dump-config", "Dumps configuration")
-    ("get-config", value<string>(), "Prints the value of the requested configuration key")
-    ("set-config", value< vector<string> >()->multitoken(), "Sets the value of a configuration key")
+    ("get-config", boost::program_options::value<std::string>(), "Prints the value of the requested configuration key")
+    ("set-config", boost::program_options::value< std::vector<std::string> >()->multitoken(), "Sets the value of a configuration key")
     ("keep-deprecated-paths", "If set then config files are kept on the old location")
     ;
 
@@ -2239,18 +2235,18 @@ void parseProgramOptions(int ac, char ** av, const string& exe, variables_map& v
     boost::program_options::options_description config("Configuration");
     config.add_options()
     ("write-log,l", descr.str().c_str())
-    ("log-file", value<string>(), "Unlike --write-log this allows logging to an arbitrary file")
-    ("user-cfg,u", value<string>(),"User config file to load/save user settings")
-    ("system-cfg,s", value<string>(),"System config file to load/save system settings")
-    ("run-test,t", value<string>()->implicit_value(""),"Run a given test case (use 0 (zero) to run all tests). If no argument is provided then return list of all available tests.")
-    ("run-open,r", value<string>()->implicit_value(""),"Run a given test case (use 0 (zero) to run all tests). If no argument is provided then return list of all available tests.  Keeps UI open after test(s) complete.")
-    ("module-path,M", value< vector<string> >()->composing(),"Additional module paths")
-    ("macro-path,E", value< vector<string> >()->composing(),"Additional macro paths")
-    ("python-path,P", value< vector<string> >()->composing(),"Additional python paths")
-    ("disable-addon", value< vector<string> >()->composing(),"Disable a given addon.")
+    ("log-file", boost::program_options::value<std::string>(), "Unlike --write-log this allows logging to an arbitrary file")
+    ("user-cfg,u", boost::program_options::value<std::string>(),"User config file to load/save user settings")
+    ("system-cfg,s", boost::program_options::value<std::string>(),"System config file to load/save system settings")
+    ("run-test,t", boost::program_options::value<std::string>()->implicit_value(""),"Run a given test case (use 0 (zero) to run all tests). If no argument is provided then return list of all available tests.")
+    ("run-open,r", boost::program_options::value<std::string>()->implicit_value(""),"Run a given test case (use 0 (zero) to run all tests). If no argument is provided then return list of all available tests.  Keeps UI open after test(s) complete.")
+    ("module-path,M", boost::program_options::value< std::vector<std::string> >()->composing(),"Additional module paths")
+    ("macro-path,E", boost::program_options::value< std::vector<std::string> >()->composing(),"Additional macro paths")
+    ("python-path,P", boost::program_options::value< std::vector<std::string> >()->composing(),"Additional python paths")
+    ("disable-addon", boost::program_options::value< std::vector<std::string> >()->composing(),"Disable a given addon.")
     ("single-instance", "Allow to run a single instance of the application")
     ("safe-mode", "Force enable safe mode")
-    ("pass", value< vector<string> >()->multitoken(), "Ignores the following arguments and pass them through to be used by a script")
+    ("pass", boost::program_options::value< std::vector<std::string> >()->multitoken(), "Ignores the following arguments and pass them through to be used by a script")
     ;
 
 
@@ -2258,33 +2254,33 @@ void parseProgramOptions(int ac, char ** av, const string& exe, variables_map& v
     // in the config file, but will not be shown to the user.
     boost::program_options::options_description hidden("Hidden options");
     hidden.add_options()
-    ("input-file", boost::program_options::value< vector<string> >(), "input file")
-    ("output",     boost::program_options::value<string>(),"output file")
+    ("input-file", boost::program_options::value< std::vector<std::string> >(), "input file")
+    ("output",     boost::program_options::value<std::string>(),"output file")
     ("hidden",                                             "don't show the main window")
     // this are to ignore for the window system (QApplication)
-    ("style",      boost::program_options::value< string >(), "set the application GUI style")
-    ("stylesheet", boost::program_options::value< string >(), "set the application stylesheet")
-    ("session",    boost::program_options::value< string >(), "restore the application from an earlier session")
+    ("style",      boost::program_options::value< std::string >(), "set the application GUI style")
+    ("stylesheet", boost::program_options::value< std::string >(), "set the application stylesheet")
+    ("session",    boost::program_options::value< std::string >(), "restore the application from an earlier session")
     ("reverse",                                               "set the application's layout direction from right to left")
     ("widgetcount",                                           "print debug messages about widgets")
-    ("graphicssystem", boost::program_options::value< string >(), "backend to be used for on-screen widgets and pixmaps")
-    ("display",    boost::program_options::value< string >(), "set the X-Server")
-    ("geometry ",  boost::program_options::value< string >(), "set the X-Window geometry")
-    ("font",       boost::program_options::value< string >(), "set the X-Window font")
-    ("fn",         boost::program_options::value< string >(), "set the X-Window font")
-    ("background", boost::program_options::value< string >(), "set the X-Window background color")
-    ("bg",         boost::program_options::value< string >(), "set the X-Window background color")
-    ("foreground", boost::program_options::value< string >(), "set the X-Window foreground color")
-    ("fg",         boost::program_options::value< string >(), "set the X-Window foreground color")
-    ("button",     boost::program_options::value< string >(), "set the X-Window button color")
-    ("btn",        boost::program_options::value< string >(), "set the X-Window button color")
-    ("name",       boost::program_options::value< string >(), "set the X-Window name")
-    ("title",      boost::program_options::value< string >(), "set the X-Window title")
-    ("visual",     boost::program_options::value< string >(), "set the X-Window to color scheme")
+    ("graphicssystem", boost::program_options::value< std::string >(), "backend to be used for on-screen widgets and pixmaps")
+    ("display",    boost::program_options::value< std::string >(), "set the X-Server")
+    ("geometry ",  boost::program_options::value< std::string >(), "set the X-Window geometry")
+    ("font",       boost::program_options::value< std::string >(), "set the X-Window font")
+    ("fn",         boost::program_options::value< std::string >(), "set the X-Window font")
+    ("background", boost::program_options::value< std::string >(), "set the X-Window background color")
+    ("bg",         boost::program_options::value< std::string >(), "set the X-Window background color")
+    ("foreground", boost::program_options::value< std::string >(), "set the X-Window foreground color")
+    ("fg",         boost::program_options::value< std::string >(), "set the X-Window foreground color")
+    ("button",     boost::program_options::value< std::string >(), "set the X-Window button color")
+    ("btn",        boost::program_options::value< std::string >(), "set the X-Window button color")
+    ("name",       boost::program_options::value< std::string >(), "set the X-Window name")
+    ("title",      boost::program_options::value< std::string >(), "set the X-Window title")
+    ("visual",     boost::program_options::value< std::string >(), "set the X-Window to color scheme")
     ("ncols",      boost::program_options::value< int    >(), "set the X-Window to color scheme")
     ("cmap",                                                  "set the X-Window to color scheme")
 #if defined(FC_OS_MACOSX)
-    ("psn",        boost::program_options::value< string >(), "process serial number")
+    ("psn",        boost::program_options::value< std::string >(), "process serial number")
 #endif
     ;
 
@@ -2317,7 +2313,7 @@ void parseProgramOptions(int ac, char ** av, const string& exe, variables_map& v
 
     // 0000659: SIGABRT on startup in boost::program_options (Boost 1.49)
     // Add some text to the constructor
-    options_description cmdline_options("Command-line options");
+    boost::program_options::options_description cmdline_options("Command-line options");
     cmdline_options.add(generic).add(config).add(hidden);
 
     boost::program_options::options_description config_file_options("Config");
@@ -2360,21 +2356,21 @@ void parseProgramOptions(int ac, char ** av, const string& exe, variables_map& v
 
     if (vm.count("response-file")) {
         // Load the file and tokenize it
-        std::ifstream ifs(vm["response-file"].as<string>().c_str());
+        std::ifstream ifs(vm["response-file"].as<std::string>().c_str());
         if (!ifs) {
             Base::Console().Error("Could no open the response file\n");
             std::stringstream str;
             str << "Could no open the response file: '"
-                << vm["response-file"].as<string>() << "'" << '\n';
+                << vm["response-file"].as<std::string>() << "'" << '\n';
             throw Base::UnknownProgramOption(str.str());
         }
         // Read the whole file into a string
-        stringstream ss;
+        std::stringstream ss;
         ss << ifs.rdbuf();
         // Split the file content
-        char_separator<char> sep(" \n\r");
-        tokenizer<char_separator<char> > tok(ss.str(), sep);
-        vector<string> args2;
+        boost::char_separator<char> sep(" \n\r");
+        boost::tokenizer<boost::char_separator<char> > tok(ss.str(), sep);
+        std::vector<std::string> args2;
         copy(tok.begin(), tok.end(), back_inserter(args2));
         // Parse the file and store the options
         store( boost::program_options::command_line_parser(args2).
@@ -2382,7 +2378,7 @@ void parseProgramOptions(int ac, char ** av, const string& exe, variables_map& v
     }
 }
 
-void processProgramOptions(const variables_map& vm, std::map<std::string,std::string>& mConfig)
+void processProgramOptions(const boost::program_options::variables_map& vm, std::map<std::string,std::string>& mConfig)
 {
     if (vm.count("version")) {
         std::stringstream str;
@@ -2410,8 +2406,8 @@ void processProgramOptions(const variables_map& vm, std::map<std::string,std::st
     }
 
     if (vm.count("module-path")) {
-        auto  Mods = vm["module-path"].as< vector<string> >();
-        string temp;
+        auto  Mods = vm["module-path"].as< std::vector<std::string> >();
+        std::string temp;
         for (const auto & It : Mods)
             temp += It + ";";
         temp.erase(temp.end()-1);
@@ -2419,8 +2415,8 @@ void processProgramOptions(const variables_map& vm, std::map<std::string,std::st
     }
 
     if (vm.count("macro-path")) {
-        vector<string> Macros = vm["macro-path"].as< vector<string> >();
-        string temp;
+        std::vector<std::string> Macros = vm["macro-path"].as< std::vector<std::string> >();
+        std::string temp;
         for (const auto & It : Macros)
             temp += It + ";";
         temp.erase(temp.end()-1);
@@ -2428,14 +2424,14 @@ void processProgramOptions(const variables_map& vm, std::map<std::string,std::st
     }
 
     if (vm.count("python-path")) {
-        auto  Paths = vm["python-path"].as< vector<string> >();
+        auto  Paths = vm["python-path"].as< std::vector<std::string> >();
         for (const auto & It : Paths)
             Base::Interpreter().addPythonPath(It.c_str());
     }
 
     if (vm.count("disable-addon")) {
-        auto Addons = vm["disable-addon"].as< vector<string> >();
-        string temp;
+        auto Addons = vm["disable-addon"].as< std::vector<std::string> >();
+        std::string temp;
         for (const auto & It : Addons) {
             temp += It + ";";
         }
@@ -2444,7 +2440,7 @@ void processProgramOptions(const variables_map& vm, std::map<std::string,std::st
     }
 
     if (vm.count("input-file")) {
-        auto  files(vm["input-file"].as< vector<string> >());
+        auto  files(vm["input-file"].as< std::vector<std::string> >());
         int OpenFileCount=0;
         for (const auto & It : files) {
 
@@ -2459,7 +2455,7 @@ void processProgramOptions(const variables_map& vm, std::map<std::string,std::st
     }
 
     if (vm.count("output")) {
-        mConfig["SaveFile"] = vm["output"].as<string>();
+        mConfig["SaveFile"] = vm["output"].as<std::string>();
     }
 
     if (vm.count("hidden")) {
@@ -2473,19 +2469,19 @@ void processProgramOptions(const variables_map& vm, std::map<std::string,std::st
 
     if (vm.count("log-file")) {
         mConfig["LoggingFile"] = "1";
-        mConfig["LoggingFileName"] = vm["log-file"].as<string>();
+        mConfig["LoggingFileName"] = vm["log-file"].as<std::string>();
     }
 
     if (vm.count("user-cfg")) {
-        mConfig["UserParameter"] = vm["user-cfg"].as<string>();
+        mConfig["UserParameter"] = vm["user-cfg"].as<std::string>();
     }
 
     if (vm.count("system-cfg")) {
-        mConfig["SystemParameter"] = vm["system-cfg"].as<string>();
+        mConfig["SystemParameter"] = vm["system-cfg"].as<std::string>();
     }
 
     if (vm.count("run-test") || vm.count("run-open")) {
-        string testCase = vm.count("run-open") ? vm["run-open"].as<string>() : vm["run-test"].as<string>();
+        std::string testCase = vm.count("run-open") ? vm["run-open"].as<std::string>() : vm["run-test"].as<std::string>();
 
         if ( "0" == testCase) {
             testCase = "TestApp.All";
@@ -2512,7 +2508,7 @@ void processProgramOptions(const variables_map& vm, std::map<std::string,std::st
     }
 
     if (vm.count("get-config")) {
-        auto configKey = vm["get-config"].as<string>();
+        auto configKey = vm["get-config"].as<std::string>();
         std::stringstream str;
         std::map<std::string,std::string>::iterator pos;
         pos = mConfig.find(configKey);
@@ -2581,7 +2577,7 @@ void Application::initConfig(int argc, char ** argv)
         }
     }
 
-    variables_map vm;
+    boost::program_options::variables_map vm;
     {
         BOOST_SCOPE_EXIT_ALL(&) {
             // console-mode needs to be set (if possible) also in case parseProgramOptions
@@ -2806,8 +2802,8 @@ void Application::initApplication()
     // set up Unit system default
     ParameterGrp::handle hGrp = App::GetApplication().GetParameterGroupByPath
        ("User parameter:BaseApp/Preferences/Units");
-    UnitsApi::setSchema(static_cast<UnitSystem>(hGrp->GetInt("UserSchema", 0)));
-    UnitsApi::setDecimals(static_cast<int>(hGrp->GetInt("Decimals", UnitsApi::getDecimals())));
+    Base::UnitsApi::setSchema(static_cast<Base::UnitSystem>(hGrp->GetInt("UserSchema", 0)));
+    Base::UnitsApi::setDecimals(static_cast<int>(hGrp->GetInt("Decimals", Base::UnitsApi::getDecimals())));
 
     // In case we are using fractional inches, get user setting for min unit
     int denom = static_cast<int>(hGrp->GetInt("FracInch", Base::QuantityFormat::getDefaultDenominator()));
@@ -3079,9 +3075,9 @@ void Application::LoadParameters()
 
 // A helper function to simplify the main part.
 template<class T>
-ostream& operator<<(ostream& os, const vector<T>& v)
+std::ostream& operator<<(std::ostream& os, const std::vector<T>& v)
 {
-    copy(v.begin(), v.end(), ostream_iterator<T>(cout, " "));
+    copy(v.begin(), v.end(), std::ostream_iterator<T>(std::cout, " "));
     return os;
 }
 
@@ -3474,7 +3470,7 @@ std::string Application::FindHomePath(const char* sCall)
 #include <cstdlib>
 #include <sys/param.h>
 
-std::string Application::FindHomePath(const char* call)
+std::string Application::FindHomePath(const char* sCall)
 {
     // If Python is initialized at this point, then we're being run from
     // MainPy.cpp, which hopefully rewrote argv[0] to point at the
@@ -3503,7 +3499,7 @@ std::string Application::FindHomePath(const char* call)
         }
     }
 
-    return call;
+    return sCall;
 }
 
 #elif defined (FC_OS_WIN32)

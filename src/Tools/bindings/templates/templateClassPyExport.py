@@ -37,7 +37,7 @@ def compareFiles(file1, file2):
 class TemplateClassPyExport(template.ModelTemplate):
     # TODO: This is temporary, once all XML files are migrated, this can be removed.
     def getPath(self, path):
-        if self.is_python:
+        if self.is_python and not self.export.Namespace in ["Base"]:
             root, ext = os.path.splitext(path)
             return f"{root}_{ext}"
         return path
@@ -366,6 +366,15 @@ public:
 using Base::streq;
 using namespace @self.export.Namespace@;
 
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+// Ignore -Wmissing-field-initializers (GCC only):
+// - C++20 guarantees omitted fields are zero-initialized.
+// - Python C API changes fields across versions.
+// - Clang does not warn; GCC does unnecessarily.
+// See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=96868
+#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
+#endif // __GNUC__
 /// Type structure of @self.export.Name@
 PyTypeObject @self.export.Name@::Type = {
     .ob_base = PyVarObject_HEAD_INIT(&PyType_Type,0)
@@ -406,6 +415,9 @@ PyTypeObject @self.export.Name@::Type = {
     .tp_init = __PyInit,
     .tp_new = @self.export.Namespace@::@self.export.Name@::PyMake
 };
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif // __GNUC__
 
 /// Methods structure of @self.export.Name@
 PyMethodDef @self.export.Name@::Methods[] = {
