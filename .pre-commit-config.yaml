@@ -69,3 +69,10 @@ repos:
     rev: 6b9072cd80691b1b48d80046d884409fb1d962d1  # frozen: v20.1.7
     hooks:
         -   id: clang-format
+repos:
+- repo: https://github.com/BlankSpruce/gersemi
+  rev: 0.21.0
+  hooks:
+  - id: gersemi
+    args: ["--line-length", "100"]
+
