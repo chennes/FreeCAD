@@ -140,8 +140,9 @@ jobs:
       uses: advanced-security/filter-sarif@v1
       with:
         patterns: |
-          -**/tests/*
-          -**/3rdParty/*
+          -'**/tests/*'
+          -'**/3rdParty/*'
+          -'**/ui_*.h'
         input: sarif-results/cpp.sarif
         output: sarif-results/cpp.sarif
 
@@ -156,3 +157,4 @@ jobs:
         name: sarif-results
         path: sarif-results
         retention-days: 1
+
