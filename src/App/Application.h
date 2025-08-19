@@ -28,6 +28,7 @@
 #include <QtCore/qtextstream.h>
 
 #include <deque>
+#include <utility>
 #include <vector>
 #include <list>
 #include <set>
@@ -37,6 +38,7 @@
 #include <Base/Observer.h>
 #include <Base/Parameter.h>
 #include <Base/ProgressIndicator.h>
+
 
 // forward declarations
 using PyObject = struct _object;
@@ -54,6 +56,7 @@ namespace App
 class Document;
 class DocumentObject;
 class ApplicationObserver;
+class ApplicationDirectories;
 class Property;
 class AutoTransaction;
 class ExtensionContainer;
@@ -423,6 +426,10 @@ public:
     static std::string getExecutableName();
     static std::string getNameWithVersion();
     static bool isDevelopmentVersion();
+
+    /// Access to the various directories for the program a replacement for the get*Path methods below
+    static std::shared_ptr<ApplicationDirectories> directories();
+
     /*!
      Returns the temporary directory. By default, this is set to the
      system's temporary directory but can be customized by the user.
@@ -620,6 +627,7 @@ private:
     static void PrintInitHelp();
     /// figure out some things
     static void ExtractUserPath();
+
     /// load the user and system parameter set
     static void LoadParameters();
     /// puts the given env variable in the config
@@ -644,6 +652,7 @@ private:
     std::map<std::string,Base::Reference<ParameterManager>> mpcPramManager;
     std::map<std::string,std::string> &_mConfig;
     App::Document* _pActiveDoc{nullptr};
+    static std::shared_ptr<ApplicationDirectories> _appDirs;
 
     std::deque<std::string> _pendingDocs;
     std::deque<std::string> _pendingDocsReopen;

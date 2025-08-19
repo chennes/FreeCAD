@@ -3,6 +3,9 @@
 #include "App/ProgramOptionsUtilities.h"
 
 #include <src/App/InitApplication.h>
+#include <App/Application.h>
+
+#include "random"
 
 
 using namespace App::Util;

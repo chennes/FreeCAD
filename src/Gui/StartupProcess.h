@@ -75,6 +75,7 @@ private:
     void showMainWindow();
     void activateWorkbench();
     void checkParameters();
+    void runWelcomeScreen();
 
 private:
     bool loadFromPythonModule = false;

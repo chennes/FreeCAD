@@ -24,17 +24,20 @@
 #include "PreCompiled.h"
 #ifndef _PreComp_
 #include <QApplication>
-#include <QDir>
 #include <QImageReader>
 #include <QLabel>
 #include <QOpenGLContext>
 #include <QOpenGLFunctions>
+#include <QProcess>
 #include <QStatusBar>
 #include <QWindow>
 #include <Inventor/SoDB.h>
 #endif
 
 #include "StartupProcess.h"
+
+#include <QTimer>
+
 #include "Application.h"
 #include "AutoSaver.h"
 #include "Dialogs/DlgCheckableMessageBox.h"
@@ -43,6 +46,7 @@
 #include "MainWindow.h"
 #include "Language/Translator.h"
 #include <App/Application.h>
+#include <App/ApplicationDirectories.h>
 #include <Base/Console.h>
 
 
@@ -220,6 +224,7 @@ void StartupPostProcess::execute()
     showMainWindow();
     activateWorkbench();
     checkParameters();
+    runWelcomeScreen();
 }
 
 void StartupPostProcess::setWindowTitle()
@@ -543,4 +548,52 @@ void StartupPostProcess::checkParameters()
         Base::Console().warning("User parameter file couldn't be opened.\n"
                                 "Continue with an empty configuration that won't be saved.\n");
     }
+}
+
+void StartupPostProcess::runWelcomeScreen()
+{
+    auto prefGroup = App::GetApplication().GetParameterGroupByPath(
+        "User parameter:BaseApp/Preferences/Migration");
+    bool offeredToMigrateToVersionedConfig =
+        prefGroup->GetBool("OfferedToMigrateToVersionedConfig", false);
+
+    // The "Welcome" screen can offer users various options they might be interested in if this is
+    // their first time running the software, or this version of the software, etc. Devs should use
+    // the parameter system to track which, if any, options should be displayed to the user.
+
+    if (!offeredToMigrateToVersionedConfig &&
+        !App::Application::directories()->usingCurrentVersionConfig(App::Application::directories()->getUserAppDataDir())) {
+        auto programName = QString::fromStdString(App::Application::getExecutableName());
+        auto major = QString::fromStdString(App::Application::Config()["BuildVersionMajor"]);
+        auto minor = QString::fromStdString(App::Application::Config()["BuildVersionMinor"]);
+        auto result = QMessageBox::question(
+            mainWindow,
+            QObject::tr("Welcome to %1 v%2.%3").arg(programName, major, minor),
+            QObject::tr("Welcome to %1 v%2.%3\n\n").arg(programName, major, minor) +
+            QObject::tr("Configuration data and addons from previous program version found. "
+                            "Migrate the old configuration to this version?"),
+            QMessageBox::Yes | QMessageBox::No);
+        prefGroup->SetBool("OfferedToMigrateToVersionedConfig", true);
+        if (result == QMessageBox::Yes) {
+            App::Application::directories()->migrateAllPaths({
+                App::Application::getUserAppDataDir(),
+                App::Application::getUserMacroDir(),
+                App::Application::getUserConfigPath()
+            });
+            auto restarting = QMessageBox(mainWindow);
+            restarting.setText(QObject::tr("Configuration data and addons have been migrated. Restarting..."));
+            restarting.setWindowTitle(QObject::tr("Restarting"));
+            restarting.setStandardButtons(QMessageBox::NoButton);
+            auto closeAndRestart = []() {
+                if (getMainWindow()->close()) {
+                    QProcess::startDetached(QApplication::applicationFilePath(),
+                        QApplication::arguments(),
+                        QApplication::applicationDirPath());
+                }
+            };
+            QTimer::singleShot(2000, closeAndRestart);
+            restarting.exec();
+        }
+    }
+
 }
