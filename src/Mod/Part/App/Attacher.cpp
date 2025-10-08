@@ -840,20 +840,60 @@ void AttachEngine::readLinks(const std::vector<App::DocumentObject*>& objs,
                           << objs[i]->getNameInDocument() << "'");
         }
 
-        auto shape = extractSubShape(objs[i], subs[i]);
-        if (shape.isNull()) {
-            if (subs[i].length() == 0) {
-                storage.emplace_back(TopoShape());
-                shapes[i] = &storage.back();
-                types[i] = eRefType(rtPart | rtFlagHasPlacement);
-                continue;
+        bool isLegacyDatumPlane = false;
+        bool isLegacyDatumLine = false;
+        auto inList = objs[i]->getInList();
+        for (auto* parent : inList) {
+            if (parent->getTypeId().isDerivedFrom(Base::Type::fromName("PartDesign::Plane"))) {
+                isLegacyDatumPlane = true;
+            } else if (parent->getTypeId().isDerivedFrom(Base::Type::fromName("PartDesign::Line"))) {
+                isLegacyDatumLine = true;
             }
-            else {
-                // This case should now be unreachable because extractSubShape would have thrown
-                // for a missing subname. But it's good defensive programming.
-                FC_THROWM(AttachEngineException,
-                          "AttachEngine3D: null subshape " << objs[i]->getNameInDocument() << '.'
-                                                           << subs[i]);
+        }
+
+        TopoShape shape;
+
+        if (isLegacyDatumPlane && geof->getTypeId().isDerivedFrom(App::Plane::getClassTypeId())) {
+            // obtain Z axis and origin of placement
+            Base::Vector3d norm;
+            geof->Placement.getValue().getRotation().multVec(Base::Vector3d(0.0, 0.0, 1.0), norm);
+            Base::Vector3d org;
+            geof->Placement.getValue().multVec(Base::Vector3d(), org);
+            // make shape - an local-XY plane infinite face
+            gp_Pln plane = gp_Pln(gp_Pnt(org.x, org.y, org.z), gp_Dir(norm.x, norm.y, norm.z));
+            TopoDS_Shape myShape = BRepBuilderAPI_MakeFace(plane).Shape();
+            myShape.Infinite(true);
+            shape.setShape(myShape);
+        }
+        else if (isLegacyDatumLine && geof->getTypeId().isDerivedFrom(App::Line::getClassTypeId())) {
+            // obtain X axis and origin of placement
+            // note an inconsistency: App::Line is along local X, PartDesign::DatumLine is along
+            // local Z.
+            Base::Vector3d dir;
+            geof->Placement.getValue().getRotation().multVec(Base::Vector3d(1.0, 0.0, 0.0), dir);
+            Base::Vector3d org;
+            geof->Placement.getValue().multVec(Base::Vector3d(), org);
+            // make shape - an infinite line along local X axis
+            gp_Lin line = gp_Lin(gp_Pnt(org.x, org.y, org.z), gp_Dir(dir.x, dir.y, dir.z));
+            TopoDS_Shape myShape = BRepBuilderAPI_MakeEdge(line).Shape();
+            myShape.Infinite(true);
+            shape.setShape(myShape);
+        } else {
+            shape = extractSubShape(objs[i], subs[i]);
+            if (shape.isNull()) {
+                if (subs[i].length() == 0) {
+                    storage.emplace_back(TopoShape());
+                    shapes[i] = &storage.back();
+                    types[i] = eRefType(rtPart | rtFlagHasPlacement);
+                    continue;
+                }
+                else {
+                    // This case should now be unreachable because extractSubShape would have thrown
+                    // for a missing subname. But it's good defensive programming.
+                    FC_THROWM(AttachEngineException,
+                              "AttachEngine3D: null subshape " << objs[i]->getNameInDocument() << '.'
+                                                               << subs[i]);
+                }
             }
         }
 
