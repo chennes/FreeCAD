@@ -1062,52 +1062,6 @@ Base::Placement AttachEngine::calculateAttachedPlacement(const Base::Placement& 
     return _calculateAttachedPlacement(objs, subnames, origPlacement);
 }
 
-Base::Placement AttachEngine::adjustLegacyTangentModeRotation(const Base::Placement& original) const
-{
-    if (this->mapMode != mmTangentPlane) {
-        return original;
-    }
-
-    Base::Placement plm = original * this->attachmentOffset.inverse();
-    Base::Vector3d position = plm.getPosition();
-    Base::Vector3d normal = plm.getRotation().multVec(Base::Vector3d(0, 0, 1));
-    Base::Vector3d xdir = plm.getRotation().multVec(Base::Vector3d(1, 0, 0));
-
-    gp_Dir uDir(xdir.x, xdir.y, xdir.z);
-    gp_Dir zDir(normal.x, normal.y, normal.z);
-
-    bool foundPlane = false;
-    for (auto obj : getRefObjects()) {
-        if (auto geof = dynamic_cast<App::GeoFeature*>(obj)) {
-            if (geof->isDerivedFrom<App::Plane>()) {
-                foundPlane = true;
-                geof->Placement.getValue().getRotation().multVec(Base::Vector3d(0, 0, 1), normal);
-                gp_Pln plane = gp_Pln(gp_Pnt(position.x, position.y, position.z), gp_Dir(normal.x, normal.y, normal.z));
-                gp_Ax3 ax3 = plane.Position();
-                uDir = ax3.XDirection();
-                zDir = ax3.Direction();
-                break;
-            }
-        }
-    }
-    if (!foundPlane) {
-        return original;
-    }
-
-    Base::Placement adjusted =
-        this->placementFactory(zDir,
-                               gp_Vec(uDir).Reversed(),
-                               gp_Pnt(position.x, position.y, position.z),
-                               gp_Pnt(),
-                               /*useRefOrg_Line = */ false,
-                               /*useRefOrg_Plane = */ false,
-                               /*makeYVertical = */ false,
-                               /*makeLegacyFlatFaceOrientation = */ false,
-                               nullptr);
-    adjusted *= this->attachmentOffset;
-    return adjusted;
-}
-
 
 //=================================================================================
 

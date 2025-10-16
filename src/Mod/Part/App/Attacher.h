@@ -305,8 +305,6 @@ public: //methods
      */
     void EnableAllSupportedModes();
 
-    Base::Placement adjustLegacyTangentModeRotation(const Base::Placement& original) const;
-
     ~AttachEngine() override = default;
 
 public://helper functions that may be useful outside of the class

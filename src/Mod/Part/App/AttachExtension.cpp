@@ -338,11 +338,6 @@ bool AttachExtension::positionBySupport()
                                         _props.attacher->getSubValues());
         }
         getPlacement().setValue(placement);
-        if (_props.attacher->mapMode == mmTangentPlane
-            && !this->getExtendedObject()->isDerivedFrom(Base::Type::fromName("Part::DatumPlane"))) {
-            Base::Placement adjusted = _props.attacher->adjustLegacyTangentModeRotation(placement);
-            getPlacement().setValue(adjusted);
-        }
         _active = 1;
         return true;
     }
