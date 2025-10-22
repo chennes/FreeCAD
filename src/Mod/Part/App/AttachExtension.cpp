@@ -118,6 +118,12 @@ AttachExtension::AttachExtension()
     // a rough test if mode string list in Attacher.cpp is in sync with eMapMode enum.
     assert(MapMode.getEnumVector().size() == mmDummy_NumberOfModes);
 
+    EXTENSION_ADD_PROPERTY_TYPE(TangentPlaneAlgorithm,
+                                (eTangentPlaneAlgorithm::tpaUnset),
+                                "Attachment",
+                                App::Prop_None,
+                                "Tangent plane calculation algorithm (for compatibility with pre-1.1 versions of FreeCAD)");
+
     EXTENSION_ADD_PROPERTY_TYPE(MapReversed,
                                 (false),
                                 "Attachment",
@@ -141,10 +147,12 @@ AttachExtension::AttachExtension()
     this->MapPathParameter.setStatus(App::Property::Status::Hidden, true);
     this->MapReversed.setStatus(App::Property::Status::Hidden, true);
     this->AttachmentOffset.setStatus(App::Property::Status::Hidden, true);
+    this->TangentPlaneAlgorithm.setStatus(App::Property::Status::Hidden, true);
 
     _props.attacherType = &AttacherType;
     _props.attachment = &AttachmentSupport;
     _props.mapMode = &MapMode;
+    _props.tangentPlaneAlgorithm = &TangentPlaneAlgorithm;
     _props.mapReversed = &MapReversed;
     _props.mapPathParameter = &MapPathParameter;
 

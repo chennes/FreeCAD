@@ -239,10 +239,12 @@ void AttachEngine::setUp(const App::PropertyLinkSubList &references,
                          eMapMode mapMode, bool mapReverse,
                          double attachParameter,
                          double surfU, double surfV,
-                         const Base::Placement &attachmentOffset)
+                         const Base::Placement &attachmentOffset,
+                         eTangentPlaneAlgorithm tangentPlaneAlgorithm)
 {
     setReferences(references);
     this->mapMode = mapMode;
+    this->tangentPlaneAlgorithm = tangentPlaneAlgorithm;
     this->mapReverse = mapReverse;
     this->attachParameter = attachParameter;
     this->surfU = surfU;
@@ -257,6 +259,7 @@ void AttachEngine::setUp(const AttachEngine &another)
     this->subnames = another.subnames;
     this->shadowSubs = another.shadowSubs;
     this->mapMode = another.mapMode;
+    this->tangentPlaneAlgorithm = another.tangentPlaneAlgorithm;
     this->mapReverse = another.mapReverse;
     this->attachParameter = another.attachParameter;
     this->surfU = another.surfU;
@@ -1506,7 +1509,7 @@ AttachEngine3D::_calculateAttachedPlacement(const std::vector<App::DocumentObjec
             }
 
             // Compatibility fallback: emulate legacy behavior (see issue #24254)
-            if (objPlane->isDerivedFrom(App::Plane::getClassTypeId())) {
+            if (objPlane->isDerivedFrom(App::Plane::getClassTypeId()) && this->tangentPlaneAlgorithm != eTangentPlaneAlgorithm::tpa11) {
                 gp_Dir globalX(1, 0, 0);
                 gp_Dir globalY(0, 1, 0);
                 gp_Dir globalZ(0, 0, 1);

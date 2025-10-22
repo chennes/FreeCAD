@@ -122,6 +122,9 @@ void AttachEnginePy::setMode(Py::String arg)
         AttachEngine &attacher = *(this->getAttachEnginePtr());
         std::string modeName = static_cast<std::string>(arg);
         attacher.mapMode = attacher.getModeByName(modeName);
+        if (attacher.mapMode == mmTangentPlane) {
+            attacher.tangentPlaneAlgorithm = eTangentPlaneAlgorithm::tpa11;
+        }
     } ATTACHERPY_STDCATCH_ATTR;
 }
 
@@ -527,7 +530,8 @@ PyObject* AttachEnginePy::readParametersFromFeature(PyObject* args)
                        feat->MapReversed.getValue(),
                        feat->MapPathParameter.getValue(),
                        0.0,0.0,
-                       feat->AttachmentOffset.getValue());
+                       feat->AttachmentOffset.getValue(),
+                       eTangentPlaneAlgorithm(feat->TangentPlaneAlgorithm.getValue()));
         return Py::new_reference_to(Py::None());
     } ATTACHERPY_STDCATCH_METH;
 }
@@ -548,6 +552,7 @@ PyObject* AttachEnginePy::writeParametersToFeature(PyObject* args)
         const AttachEngine &attacher = *(this->getAttachEnginePtr());
         feat->AttachmentSupport.setValues(attacher.getRefObjects(),attacher.getSubValues());
         feat->MapMode.setValue(attacher.mapMode);
+        feat->TangentPlaneAlgorithm.setValue(attacher.tangentPlaneAlgorithm);
         feat->MapReversed.setValue(attacher.mapReverse);
         feat->MapPathParameter.setValue(attacher.attachParameter);
         feat->AttachmentOffset.setValue(attacher.attachmentOffset);

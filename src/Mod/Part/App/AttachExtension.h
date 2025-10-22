@@ -90,6 +90,7 @@ public:
     App::PropertyEnumeration AttacherEngine;
     App::PropertyLinkSubList AttachmentSupport;
     App::PropertyEnumeration MapMode;  // see AttachEngine::eMapMode
+    App::PropertyEnumeration TangentPlaneAlgorithm;  // Only for MapMode == mmTangentPlane, see AttachEngine::eTangentPlaneAlgorithm
     App::PropertyBool MapReversed;     // inverts Z and X internal axes
     App::PropertyPlacement AttachmentOffset;
 
@@ -125,12 +126,13 @@ public:
         App::PropertyString* attacherType = nullptr;
         App::PropertyLinkSubList* attachment = nullptr;
         App::PropertyEnumeration* mapMode = nullptr;
+        App::PropertyEnumeration* tangentPlaneAlgorithm = nullptr;
         App::PropertyBool* mapReversed = nullptr;
         App::PropertyFloat* mapPathParameter = nullptr;
         bool matchProperty(const App::Property* prop) const
         {
-            return prop == attachment || prop == mapMode || prop == mapReversed
-                || prop == mapPathParameter;
+            return prop == attachment || prop == mapMode || prop == tangentPlaneAlgorithm
+                || prop == mapReversed || prop == mapPathParameter;
         }
     };
     Properties getProperties(bool base) const;

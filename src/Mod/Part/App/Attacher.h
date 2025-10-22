@@ -115,6 +115,11 @@ enum eMapMode {
     mmDummy_NumberOfModes//a value useful to check the validity of mode value
 };//see also eMapModeStrings[] definition in .cpp
 
+enum eTangentPlaneAlgorithm {
+    tpaUnset,  // Unset implies pre-1.1
+    tpaPre11,  // Explicitly pre-1.1
+    tpa11      // 1.1 and later
+};
 
 /**
  * @brief The eRefType enum lists the types of references. If adding one, see
@@ -222,11 +227,12 @@ class PartExport AttachEngine : public Base::BaseClass
 public: //methods
     AttachEngine();
     virtual void setUp(const App::PropertyLinkSubList &references,
-                      eMapMode mapMode = mmDeactivated,
-                      bool mapReverse = false,
-                      double attachParameter = 0.0,
-                      double surfU = 0.0, double surfV = 0.0,
-                      const Base::Placement &attachmentOffset = Base::Placement());
+                       eMapMode mapMode = mmDeactivated,
+                       bool mapReverse = false,
+                       double attachParameter = 0.0,
+                       double surfU = 0.0, double surfV = 0.0,
+                       const Base::Placement &attachmentOffset = Base::Placement(),
+                       eTangentPlaneAlgorithm tangentPlaneAlgorithm = eTangentPlaneAlgorithm::tpaUnset);
     virtual void setUp(const AttachEngine &another);
 
     void setOffset(const Base::Placement &offset);
@@ -390,6 +396,7 @@ public: //members
     std::vector<std::string> shadowSubs;
 
     eMapMode mapMode = mmDeactivated;
+    eTangentPlaneAlgorithm tangentPlaneAlgorithm = eTangentPlaneAlgorithm::tpaUnset;
     bool mapReverse = false;
     double attachParameter = 0.0;
     double surfU = 0.0, surfV = 0.0;
