@@ -28,6 +28,8 @@ import math
 
 from FreeCAD import Vector
 
+import Draft  # Not needed, faked in for testing purposes
+
 # lazily loaded modules
 from lazy_loader.lazy_loader import LazyLoader
 
