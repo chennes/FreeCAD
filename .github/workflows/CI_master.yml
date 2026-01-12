@@ -41,25 +41,46 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+
+  Gate:
+    runs-on: ubuntu-latest
+    outputs:
+      run_ci: ${{ steps.decide.outputs.run_ci }}
+    steps:
+      - id: decide
+        run: |
+          LABELS='${{ toJson(github.event.pull_request.labels.*.name) }}'
+          echo "PR labels: $LABELS"
+          if echo "$LABELS" | grep -qi '"Block CI"\|"block ci"\|"Block-CI"\|"block-ci"'; then
+            echo "run_ci=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run_ci=true" >> "$GITHUB_OUTPUT"
+          fi
+          
   Prepare:
+    needs: Gate
+    if: needs.Gate.outputs.run_ci == 'true'
     uses: ./.github/workflows/sub_prepare.yml
     with:
       artifactBasename: Prepare-${{ github.run_id }}
 
   Pixi:
-    needs: [Prepare]
+    needs: [Gate, Prepare]
+    if: needs.Gate.outputs.run_ci == 'true'
     uses: ./.github/workflows/sub_buildPixi.yml
     with:
       artifactBasename: Pixi-${{ github.run_id }}
 
 #  Ubuntu:
-#    needs: [Prepare]
-#    if: "!startsWith(github.head_ref, 'refs/heads/backport-')"
+#    needs: [Gate, Prepare]
+#    if: "!startsWith(github.head_ref, 'refs/heads/backport-') && needs.Gate.outputs.run_ci == 'true'"
 #    uses: ./.github/workflows/sub_buildUbuntu.yml
 #    with:
 #      artifactBasename: Ubuntu-${{ github.run_id }}
 
   Windows:
+    needs: [Gate, Prepare]
+    if: needs.Gate.outputs.run_ci == 'true'
     needs: [Prepare]
     if: "!startsWith(github.head_ref, 'refs/heads/backport-')"
     uses: ./.github/workflows/sub_buildWindows.yml
@@ -81,6 +102,7 @@ jobs:
 
   WrapUp:
     needs: [
+        Gate,
         Prepare,
         Pixi,
         Windows,
