@@ -764,8 +764,8 @@ MenuItem* StdWorkbench::setupMenuBar() const
     auto tool = new MenuItem(menuBar);
     tool->setCommand("&Tools");
 #ifdef BUILD_ADDONMGR
-    if (Application::Instance->commandManager().getCommandByName("Std_AddonMgr")) {
-        *tool << "Std_AddonMgr"
+    if (Application::Instance->commandManager().getCommandByName("Std_AddonMgrLauncher")) {
+        *tool << "Std_AddonMgrLauncher"
               << "Separator";
     }
 #endif

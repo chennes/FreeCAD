@@ -176,7 +176,7 @@ void ThemeSelectorWidget::setupUi()
 
 void ThemeSelectorWidget::onLinkActivated(const QString& link)
 {
-    auto const addonManagerLink = QStringLiteral("freecad:Std_AddonMgr");
+    auto const addonManagerLink = QStringLiteral("freecad:Std_AddonMgrLauncher");
 
     if (link != addonManagerLink) {
         return;
@@ -190,7 +190,7 @@ void ThemeSelectorWidget::onLinkActivated(const QString& link)
     pref->SetInt("PackageTypeSelection", 3);  // 3 stands for Preference Packs
     pref->SetInt("StatusSelection", 0);       // 0 stands for any installation status
 
-    Gui::Application::Instance->commandManager().runCommandByName("Std_AddonMgr");
+    Gui::Application::Instance->commandManager().runCommandByName("Std_AddonMgrLauncher");
 }
 
 void ThemeSelectorWidget::preselectThemeFromSystemSettings()
@@ -245,10 +245,10 @@ bool ThemeSelectorWidget::eventFilter(QObject* object, QEvent* event)
 void ThemeSelectorWidget::retranslateUi()
 {
     _titleLabel->setText(QLatin1String("<h2>") + tr("Theme") + QLatin1String("</h2>"));
-    if (Gui::Application::Instance->commandManager().getCommandByName("Std_AddonMgr")) {
+    if (Gui::Application::Instance->commandManager().getCommandByName("Std_AddonMgrLauncher")) {
         _descriptionLabel->setText(
             tr("Looking for more themes? You can obtain them using "
-               "<a href=\"freecad:Std_AddonMgr\">Addon Manager</a>.")
+               "<a href=\"freecad:Std_AddonMgrLauncher\">Addon Manager</a>.")
         );
     }
     else {

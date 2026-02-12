@@ -128,7 +128,7 @@ DlgMacroExecuteImp::DlgMacroExecuteImp(QWidget* parent, Qt::WindowFlags fl)
     fillUpList();
     ui->LineEditFind->setFocus();
     ui->addonsButton->setEnabled(
-        Application::Instance->commandManager().getCommandByName("Std_AddonMgr") != nullptr
+        Application::Instance->commandManager().getCommandByName("Std_AddonMgrLauncher") != nullptr
     );
 }
 
@@ -1093,7 +1093,7 @@ void DlgMacroExecuteImp::onDuplicateButtonClicked()
 void DlgMacroExecuteImp::onAddonsButtonClicked()
 {
     CommandManager& rMgr = Application::Instance->commandManager();
-    rMgr.runCommandByName("Std_AddonMgr");
+    rMgr.runCommandByName("Std_AddonMgrLauncher");
     this->fillUpList();
 }
 

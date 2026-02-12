@@ -180,8 +180,8 @@
     </message>
     <message>
       <location filename="../../ThemeSelectorWidget.cpp" line="250"/>
-      <source>Looking for more themes? You can obtain them using &lt;a href="freecad:Std_AddonMgr"&gt;Addon Manager&lt;/a&gt;.</source>
-      <translation>Leder du efter flere temaer? Du kan få dem ved hjælp af &lt;a href="freecad:Std_AddonMgr"&gt;Addon Manager&lt;/a&gt;.</translation>
+      <source>Looking for more themes? You can obtain them using &lt;a href="freecad:Std_AddonMgrLauncher"&gt;Addon Manager&lt;/a&gt;.</source>
+      <translation>Leder du efter flere temaer? Du kan få dem ved hjælp af &lt;a href="freecad:Std_AddonMgrLauncher"&gt;Addon Manager&lt;/a&gt;.</translation>
     </message>
     <message>
       <location filename="../../ThemeSelectorWidget.cpp" line="257"/>

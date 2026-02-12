@@ -227,7 +227,7 @@ dot/period will always be printed</string>
           </font>
          </property>
          <property name="text">
-          <string>Looking for more themes? You can obtain them using the &lt;a href=&quot;freecad:Std_AddonMgr&quot;&gt;Addon Manager&lt;/a&gt;.</string>
+          <string>Looking for more themes? You can obtain them using the &lt;a href=&quot;freecad:Std_AddonMgrLauncher&quot;&gt;Addon Manager&lt;/a&gt;.</string>
          </property>
          <property name="textFormat">
           <enum>Qt::RichText</enum>

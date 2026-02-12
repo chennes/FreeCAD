@@ -11236,8 +11236,8 @@ Punkt ausgegeben wird</translation>
     </message>
     <message>
       <location filename="../PreferencePages/DlgSettingsGeneral.ui" line="230"/>
-      <source>Looking for more themes? You can obtain them using the &lt;a href="freecad:Std_AddonMgr"&gt;Addon Manager&lt;/a&gt;.</source>
-      <translation>Auf der Suche nach weiteren Themes? Diese können über den &lt;a href="freecad:Std_AddonMgr"&gt;Addon-Manager&lt;/a&gt; abgerufen werden.</translation>
+      <source>Looking for more themes? You can obtain them using the &lt;a href="freecad:Std_AddonMgrLauncher"&gt;Addon Manager&lt;/a&gt;.</source>
+      <translation>Auf der Suche nach weiteren Themes? Diese können über den &lt;a href="freecad:Std_AddonMgrLauncher"&gt;Addon-Manager&lt;/a&gt; abgerufen werden.</translation>
     </message>
     <message>
       <location filename="../PreferencePages/DlgSettingsGeneral.ui" line="240"/>

@@ -180,8 +180,8 @@
     </message>
     <message>
       <location filename="../../ThemeSelectorWidget.cpp" line="250"/>
-      <source>Looking for more themes? You can obtain them using &lt;a href="freecad:Std_AddonMgr"&gt;Addon Manager&lt;/a&gt;.</source>
-      <translation>További témákat keres? Ezeket a &lt;a href="freecad:Std_AddonMgr"&gt;Kiegészítő kezelője&lt;/a&gt; segítségével szerezheti be.</translation>
+      <source>Looking for more themes? You can obtain them using &lt;a href="freecad:Std_AddonMgrLauncher"&gt;Addon Manager&lt;/a&gt;.</source>
+      <translation>További témákat keres? Ezeket a &lt;a href="freecad:Std_AddonMgrLauncher"&gt;Kiegészítő kezelője&lt;/a&gt; segítségével szerezheti be.</translation>
     </message>
     <message>
       <location filename="../../ThemeSelectorWidget.cpp" line="257"/>

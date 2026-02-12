@@ -11098,7 +11098,7 @@ dot/period will always be printed</source>
     </message>
     <message>
         <location filename="../PreferencePages/DlgSettingsGeneral.ui" line="230"/>
-        <source>Looking for more themes? You can obtain them using the &lt;a href=&quot;freecad:Std_AddonMgr&quot;&gt;Addon Manager&lt;/a&gt;.</source>
+        <source>Looking for more themes? You can obtain them using the &lt;a href=&quot;freecad:Std_AddonMgrLauncher&quot;&gt;Addon Manager&lt;/a&gt;.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

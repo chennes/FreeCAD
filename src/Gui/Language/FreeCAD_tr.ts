@@ -11239,8 +11239,8 @@ nokta (.) yazdırılır</translation>
     </message>
     <message>
       <location filename="../PreferencePages/DlgSettingsGeneral.ui" line="230"/>
-      <source>Looking for more themes? You can obtain them using the &lt;a href="freecad:Std_AddonMgr"&gt;Addon Manager&lt;/a&gt;.</source>
-      <translation>Daha fazla tema mı arıyorsunuz? Bunları &lt;a href="freecad:Std_AddonMgr"&gt;Eklenti Yöneticisi&lt;/a&gt; ile edinebilirsiniz.</translation>
+      <source>Looking for more themes? You can obtain them using the &lt;a href="freecad:Std_AddonMgrLauncher"&gt;Addon Manager&lt;/a&gt;.</source>
+      <translation>Daha fazla tema mı arıyorsunuz? Bunları &lt;a href="freecad:Std_AddonMgrLauncher"&gt;Eklenti Yöneticisi&lt;/a&gt; ile edinebilirsiniz.</translation>
     </message>
     <message>
       <location filename="../PreferencePages/DlgSettingsGeneral.ui" line="240"/>

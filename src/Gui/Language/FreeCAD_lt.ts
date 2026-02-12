@@ -12377,8 +12377,8 @@ dot/period will always be printed.</source>
     </message>
     <message>
       <location filename="../PreferencePages/DlgSettingsGeneral.ui" line="246"/>
-      <source>Looking for more themes? You can obtain them using &lt;a href="freecad:Std_AddonMgr"&gt;Addon Manager&lt;/a&gt;.</source>
-      <translation>Ieškote daugiau apipavidalinimų? Jų galite gauti naudodamiesi &lt;a href="freecad:Std_AddonMgr"&gt;Papildinių tvarkykle&lt;/a&gt;.</translation>
+      <source>Looking for more themes? You can obtain them using &lt;a href="freecad:Std_AddonMgrLauncher"&gt;Addon Manager&lt;/a&gt;.</source>
+      <translation>Ieškote daugiau apipavidalinimų? Jų galite gauti naudodamiesi &lt;a href="freecad:Std_AddonMgrLauncher"&gt;Papildinių tvarkykle&lt;/a&gt;.</translation>
     </message>
     <message>
       <location filename="../PreferencePages/DlgSettingsGeneral.ui" line="256"/>

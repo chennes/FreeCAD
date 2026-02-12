@@ -148,7 +148,7 @@ DlgSettingsGeneral::DlgSettingsGeneral(QWidget* parent)
     ui->comboBox_FracInch->setVisible(visible);
     ui->fractionalInchLabel->setVisible(visible);
     ui->moreThemesLabel->setEnabled(
-        Application::Instance->commandManager().getCommandByName("Std_AddonMgr") != nullptr
+        Application::Instance->commandManager().getCommandByName("Std_AddonMgrLauncher") != nullptr
     );
 }
 
@@ -825,7 +825,7 @@ void DlgSettingsGeneral::onThemeChanged(int index)
 
 void DlgSettingsGeneral::onLinkActivated(const QString& link)
 {
-    auto const addonManagerLink = QStringLiteral("freecad:Std_AddonMgr");
+    auto const addonManagerLink = QStringLiteral("freecad:Std_AddonMgrLauncher");
 
     if (link != addonManagerLink) {
         return;
@@ -839,7 +839,7 @@ void DlgSettingsGeneral::onLinkActivated(const QString& link)
     pref->SetInt("PackageTypeSelection", 3);  // 3 stands for Preference Packs
     pref->SetInt("StatusSelection", 0);       // 0 stands for any installation status
 
-    Gui::Application::Instance->commandManager().runCommandByName("Std_AddonMgr");
+    Gui::Application::Instance->commandManager().runCommandByName("Std_AddonMgrLauncher");
 }
 
 ///////////////////////////////////////////////////////////

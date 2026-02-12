@@ -1,10 +1,6 @@
-if(BUILD_ADDONMGR)
-  if( NOT EXISTS "${CMAKE_SOURCE_DIR}/src/Mod/AddonManager/CMakeLists.txt" )
-    message(FATAL_ERROR "The Addon Manager has been moved into a git submodule. Please run
-    git submodule update --init" )
-  endif()
-  add_subdirectory(AddonManager)
-endif(BUILD_ADDONMGR)
+if(BUILD_ADDONMGR_LAUNCHER)
+  add_subdirectory(AddonManagerLauncher)
+endif()
 
 if(BUILD_BIM)
   add_subdirectory(BIM)

@@ -44,7 +44,7 @@ DlgPreferencePackManagementImp::DlgPreferencePackManagementImp(QWidget* parent)
     , ui(new Ui_DlgPreferencePackManagement)
 {
     ui->setupUi(this);
-    if (Application::Instance->commandManager().getCommandByName("Std_AddonMgr")) {
+    if (Application::Instance->commandManager().getCommandByName("Std_AddonMgrLauncher")) {
         connect(
             ui->pushButtonOpenAddonManager,
             &QPushButton::clicked,
@@ -229,7 +229,7 @@ void DlgPreferencePackManagementImp::showAddonManager()
     pref->SetInt("StatusSelection", 0);
 
     CommandManager& rMgr = Application::Instance->commandManager();
-    rMgr.runCommandByName("Std_AddonMgr");
+    rMgr.runCommandByName("Std_AddonMgrLauncher");
     close();
 }
 
