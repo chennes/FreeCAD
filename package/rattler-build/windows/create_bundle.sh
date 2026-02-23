@@ -67,6 +67,31 @@ sed -i '1s/.*/\nLIST OF PACKAGES:/' ${copy_dir}/packages.txt
 
 mv ${copy_dir} ${version_name}
 
+# Sign the exe and DLL files:
+set -euo pipefail
+SIGN_DIR="${version_name}/bin"
+
+if az account get-access-token --resource https://artifactsigning.azure.net >/dev/null 2>&1; then
+    echo "Azure Artifact Signing access confirmed. Beginning signing process..."
+
+    find "$SIGN_DIR" -type f \( -iname "*.exe" -o -iname "*.dll" \) | \
+    while IFS= read -r f; do
+        if signtool verify /pa "$f" >/dev/null 2>&1; then
+            echo "Already signed, skipping: $f"
+            continue
+        fi
+        echo "Signing: $f"
+
+        sign code trusted-signing \
+            --file "$f" \
+            --timestamp-rfc3161 https://timestamp.acs.microsoft.com \
+            --timestamp-digest sha256
+    done
+    echo "Signing completed."
+else
+    echo "No Azure Artifact Signing available -- skipping signing."
+fi
+
 7z a -t7z -mx9 -mmt=${NUMBER_OF_PROCESSORS} ${version_name}.7z ${version_name} -bb
 # create hash
 sha256sum ${version_name}.7z > ${version_name}.7z-SHA256.txt
@@ -88,6 +113,15 @@ if [ "${MAKE_INSTALLER}" == "true" ]; then
             -X'SetCompressor /FINAL lzma' \
             ../../WindowsInstaller/FreeCAD-installer.nsi
         mv ../../WindowsInstaller/${version_name}-installer.exe .
+
+        # See if we can sign the installer exe as well:
+        if az account get-access-token --resource https://artifactsigning.azure.net >/dev/null 2>&1; then
+            sign code trusted-signing \
+                --file ${version_name}-installer.exe \
+                --timestamp-rfc3161 http://timestamp.acs.microsoft.com \
+                --timestamp-digest sha256
+        fi
+
         sha256sum ${version_name}-installer.exe > ${version_name}-installer.exe-SHA256.txt
     else
         echo "Error: Failed to get NsProcess plugin. Aborting installer creation..."
