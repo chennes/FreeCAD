@@ -3084,6 +3084,140 @@ class TestTopologicalNamingProblem(unittest.TestCase):
         self.assertTrue(self.Sketch002.AttachmentSupport[0][1][0] == "Face11")
         self.assertGreaterEqual(self.Body.Shape.Volume, 20126)
 
+    # -------------------------------------------------------------------------
+    # Tests for issue #25720: PartDesign element map regression in FreeCAD 1.1
+    # -------------------------------------------------------------------------
+
+    def _makeTwoSidesPad(self, version):
+        """Helper: body + sketch + Two-sides pad with the given ExtrusionVersion string."""
+        body = self.Doc.addObject("PartDesign::Body", "Body" + version)
+        sketch = self.Doc.addObject("Sketcher::SketchObject", "Sketch" + version)
+        body.addObject(sketch)
+        sketch.AttachmentSupport = (self.Doc.XY_Plane, [""])
+        sketch.MapMode = "FlatFace"
+        TestSketcherApp.CreateRectangleSketch(sketch, (0, 0), (1, 1))
+        self.Doc.recompute()
+        pad = self.Doc.addObject("PartDesign::Pad", "Pad" + version)
+        body.addObject(pad)
+        pad.Profile = sketch
+        pad.SideType = "Two sides"
+        pad.Length = 5.0
+        pad.Length2 = 3.0
+        pad.ExtrusionVersion = version
+        self.Doc.recompute()
+        return pad
+
+    def testPadTwoSidesPreV11ElementMapIsStable(self):
+        """A pre-V11 'Two sides' Pad must have stable element map IDs across recomputes.
+
+        Issue #25720: FreeCAD 1.1 introduced a single-prism optimisation for 'Two sides'
+        pads that changes element-map IDs compared to the pre-1.1 two-prism algorithm.
+        Setting ExtrusionVersion='PreV11' must force the old two-prism path so that files
+        created before FreeCAD 1.1 continue to work correctly on every recompute.
+        """
+        pad = self._makeTwoSidesPad("PreV11")
+        if self.Doc.getObject("BodyPreV11").Shape.ElementMapVersion == "":
+            return  # Element maps not compiled in; skip
+        map1 = dict(pad.Shape.ElementReverseMap)
+        self.assertGreater(len(map1), 0, "Element map must not be empty")
+        # Touch and recompute — element IDs must not change
+        pad.touch()
+        self.Doc.recompute()
+        map2 = dict(pad.Shape.ElementReverseMap)
+        self.assertEqual(
+            map1,
+            map2,
+            "Two-sides PreV11 element IDs changed across recomputes (fix for issue #25720)",
+        )
+
+    def testPadTwoSidesV11OptimisationChangesElementMap(self):
+        """The V11 single-prism optimisation produces different element IDs than PreV11.
+
+        Issue #25720: This confirms the optimisation is meaningful — switching a pad from
+        PreV11 to V11 must change element-map IDs, which is exactly why old files need the
+        PreV11 path to keep their stored references valid.
+        """
+        pad = self._makeTwoSidesPad("PreV11")
+        body = self.Doc.getObject("BodyPreV11")
+        if body.Shape.ElementMapVersion == "":
+            return  # Element maps not compiled in; skip
+        pre_v11_map = dict(pad.Shape.ElementReverseMap)
+        # Switch to V11 and recompute
+        pad.ExtrusionVersion = "V11"
+        self.Doc.recompute()
+        v11_map = dict(pad.Shape.ElementReverseMap)
+        self.assertNotEqual(
+            pre_v11_map,
+            v11_map,
+            "PreV11 and V11 Two-sides pads must produce different element IDs",
+        )
+
+    def testPadSymmetricNonLengthPreV11MigratesDirection(self):
+        """A pre-V11 Symmetric non-Length Pad must migrate to an explicit custom direction.
+
+        Issue #25720: Commit 02479a152836 changed the Symmetric mirror-plane normal from
+        'dir' (the extrusion direction) to 'sketchNormalDir' (the sketch normal), breaking
+        element-map IDs for pads that were saved with old code.  The fix migrates old pads
+        to store their original direction as UseCustomVector=True so the mirror can always
+        use 'dir' without a version check.
+
+        This test verifies the runtime-fallback path in buildExtrusion(), which handles the
+        case where onDocumentRestored() could not migrate (profile unavailable at load time).
+        For the full file-load migration path, see the manual test with cateye-reflex.fcstd.
+        """
+        # Arrange: build a target solid for UpToFirst to stop against
+        body = self.Doc.addObject("PartDesign::Body", "Body")
+        sketch1 = self.Doc.addObject("Sketcher::SketchObject", "Sketch1")
+        body.addObject(sketch1)
+        sketch1.AttachmentSupport = (self.Doc.XY_Plane, [""])
+        sketch1.MapMode = "FlatFace"
+        TestSketcherApp.CreateRectangleSketch(sketch1, (0, 1), (1, 1))
+        self.Doc.recompute()
+        base_pad = self.Doc.addObject("PartDesign::Pad", "BasePad")
+        body.addObject(base_pad)
+        base_pad.Profile = sketch1
+        base_pad.Length = 1.0
+        self.Doc.recompute()
+        # Symmetric / UpToFirst pad — simulates a pre-V11 file with default direction
+        sketch2 = self.Doc.addObject("Sketcher::SketchObject", "Sketch2")
+        body.addObject(sketch2)
+        sketch2.AttachmentSupport = (self.Doc.XZ_Plane, [""])
+        sketch2.MapMode = "FlatFace"
+        TestSketcherApp.CreateRectangleSketch(sketch2, (0, 0), (1, 1))
+        self.Doc.recompute()
+        sym_pad = self.Doc.addObject("PartDesign::Pad", "SymPad")
+        body.addObject(sym_pad)
+        sym_pad.Profile = sketch2
+        sym_pad.SideType = "Symmetric"
+        sym_pad.Type = "UpToFirst"
+        sym_pad.Reversed = True
+        sym_pad.ExtrusionVersion = "PreV11"
+        # UseCustomVector is False — this is the pre-V11 state (default direction)
+        self.Doc.recompute()
+        if body.Shape.ElementMapVersion == "":
+            return  # Element maps not compiled in; skip
+        # Act + Assert: runtime fallback must have migrated direction
+        self.assertTrue(
+            sym_pad.UseCustomVector,
+            "Migration must set UseCustomVector=True for pre-V11 Symmetric/non-Length pad",
+        )
+        self.assertEqual(
+            str(sym_pad.ExtrusionVersion),
+            "V11",
+            "Migration must update ExtrusionVersion to V11",
+        )
+        # Element map must be stable across a second recompute
+        map1 = dict(sym_pad.Shape.ElementReverseMap)
+        self.assertGreater(len(map1), 0, "Element map must not be empty")
+        sym_pad.touch()
+        self.Doc.recompute()
+        map2 = dict(sym_pad.Shape.ElementReverseMap)
+        self.assertEqual(
+            map1,
+            map2,
+            "Symmetric non-Length element IDs changed after migration (fix for issue #25720)",
+        )
+
     def tearDown(self):
         """Clean up our test, optionally preserving the test document"""
         # This flag allows doing something like this:
