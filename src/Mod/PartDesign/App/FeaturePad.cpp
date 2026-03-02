@@ -104,6 +104,17 @@ Pad::Pad()
     // https://forum.freecad.org/viewtopic.php?f=3&t=52075&p=448410#p447636
     Length.setConstraints(nullptr);
     Length2.setConstraints(nullptr);
+
+    // Algorithm version flag for element-map backwards compatibility. Defaults to PreV11 for
+    // files created before FreeCAD 1.1. setupObject() sets this to V11 for new features.
+    ADD_PROPERTY_TYPE(
+        ExtrusionVersion,
+        (PartDesign::PreV11),
+        "Compatibility",
+        App::Prop_Hidden,
+        "Extrusion algorithm version, for element-map backwards compatibility with old files"
+    );
+    ExtrusionVersion.setEnums(FeatureExtrude::ExtrusionVersionEnums);
 }
 
 

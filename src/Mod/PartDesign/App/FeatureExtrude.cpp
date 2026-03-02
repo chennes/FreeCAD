@@ -31,6 +31,7 @@
 #include <gp_Ax2.hxx>
 #include <Precision.hxx>
 #include <TopExp_Explorer.hxx>
+#include <TopLoc_Location.hxx>
 #include <TopoDS_Compound.hxx>
 #include <TopoDS_Face.hxx>
 #include <TopoDS_Shape.hxx>
@@ -48,6 +49,7 @@ FC_LOG_LEVEL_INIT("PartDesign", true, true)
 using namespace PartDesign;
 
 const char* FeatureExtrude::SideTypesEnums[] = {"One side", "Two sides", "Symmetric", nullptr};
+const char* FeatureExtrude::ExtrusionVersionEnums[] = {"PreV11", "V11", nullptr};
 
 PROPERTY_SOURCE(PartDesign::FeatureExtrude, PartDesign::ProfileBased)
 
@@ -65,7 +67,7 @@ short FeatureExtrude::mustExecute() const
         || TaperAngle2.isTouched() || UseCustomVector.isTouched() || Direction.isTouched()
         || ReferenceAxis.isTouched() || AlongSketchNormal.isTouched() || Offset.isTouched()
         || Offset2.isTouched() || UpToFace.isTouched() || UpToFace2.isTouched()
-        || UpToShape.isTouched() || UpToShape2.isTouched()) {
+        || UpToShape.isTouched() || UpToShape2.isTouched() || ExtrusionVersion.isTouched()) {
         return 1;
     }
     return ProfileBased::mustExecute();
@@ -317,6 +319,7 @@ void FeatureExtrude::updateProperties()
 void FeatureExtrude::setupObject()
 {
     ProfileBased::setupObject();
+    ExtrusionVersion.setValue(V11);
 }
 
 App::DocumentObjectExecReturn* FeatureExtrude::buildExtrusion(ExtrudeOptions options)
@@ -575,6 +578,15 @@ App::DocumentObjectExecReturn* FeatureExtrude::buildExtrusion(ExtrudeOptions opt
             }
             else {
                 // For "UpToFace", "UpToShape", etc., mirror the result.
+
+                // Runtime migration fallback: if onDocumentRestored() couldn't migrate this
+                // pre-V11 feature (e.g., profile not available at restore time), do it now.
+                // computeDirection() has already set Direction = paddingDirection above.
+                if (ExtrusionVersion.getValue() == PreV11 && !UseCustomVector.getValue()) {
+                    UseCustomVector.setValue(true);
+                    ExtrusionVersion.setValue(V11);
+                }
+
                 TopoShape prism1 = generateSingleExtrusionSide(
                     sketchshape,
                     method,
@@ -590,16 +602,13 @@ App::DocumentObjectExecReturn* FeatureExtrude::buildExtrusion(ExtrudeOptions opt
                 );
                 prisms.push_back(prism1);
 
-                // Prism 2: Mirror prism1 across the sketch plane.
-                // The mirror plane's normal must be the sketch normal, not the extrusion direction.
-                gp_Dir sketchNormalDir(SketchVector.x, SketchVector.y, SketchVector.z);
-                sketchNormalDir.Transform(invTrsf);  // Transform to global CS, like 'dir' was.
-
+                // Prism 2: Mirror prism1 about the sketch plane.
+                // The mirror plane normal is 'dir' (the extrusion direction), which for default
+                // features equals the sketch normal, and for custom-direction features respects
+                // the user's explicitly set direction. Pre-v1.1 files have been migrated above
+                // to store their original direction as a custom direction. See issue #25720.
                 Base::Vector3d sketchCenter = sketchshape.getBoundBox().GetCenter();
-                gp_Ax2 mirrorPlane(
-                    gp_Pnt(sketchCenter.x, sketchCenter.y, sketchCenter.z),
-                    sketchNormalDir
-                );
+                gp_Ax2 mirrorPlane(gp_Pnt(sketchCenter.x, sketchCenter.y, sketchCenter.z), dir);
                 TopoShape prism2 = prism1.makeElementMirror(mirrorPlane);
                 prisms.push_back(prism2);
             }
@@ -614,7 +623,11 @@ App::DocumentObjectExecReturn* FeatureExtrude::buildExtrusion(ExtrudeOptions opt
             bool method1LengthBased = method == "Length" || method == "ThroughAll";
             bool method2LengthBased = method2 == "Length" || method2 == "ThroughAll";
 
-            if (method1LengthBased && method2 != "UpToFirst" && noTaper) {
+            // Pre-v1.1 files used two separate prisms rather than the single-prism
+            // optimization below, which changes element map IDs. For backwards compatibility,
+            // old files retain the two-prism behavior via ExtrusionVersion. See issue #25720.
+            bool useV11Optimization = (ExtrusionVersion.getValue() != PreV11);
+            if (useV11Optimization && method1LengthBased && method2 != "UpToFirst" && noTaper) {
                 gp_Trsf start_transform;
                 start_transform.SetTranslation(gp_Vec(dir) * L);
 
@@ -637,7 +650,7 @@ App::DocumentObjectExecReturn* FeatureExtrude::buildExtrusion(ExtrudeOptions opt
                     prisms.push_back(prism);
                 }
             }
-            else if (method2LengthBased && method != "UpToFirst" && noTaper) {
+            else if (useV11Optimization && method2LengthBased && method != "UpToFirst" && noTaper) {
                 gp_Trsf start_transform;
                 start_transform.SetTranslation(gp_Vec(dir).Reversed() * L2);
 
@@ -959,6 +972,42 @@ TopoShape FeatureExtrude::generateSingleExtrusionSide(
     return prism;
 }
 
+bool FeatureExtrude::migrateSymmetricDirection()
+{
+    // Only migrate pre-V11 Symmetric non-Length features.
+    if (ExtrusionVersion.getValue() != PreV11) {
+        return true;  // Already migrated; nothing to do
+    }
+    if (strcmp(SideType.getValueAsString(), "Symmetric") != 0) {
+        return true;  // Not symmetric; no migration needed
+    }
+    if (strcmp(Type.getValueAsString(), "Length") == 0) {
+        return true;  // Symmetric/Length uses translate-sketch, not mirror; no migration needed
+    }
+
+    // This is a pre-V11 Symmetric non-Length feature.
+    // Pre-v1.1 code used the extrusion direction as the mirror plane normal. Commit 02479a152836
+    // changed this to use the sketch normal, which changes element-map IDs for features with
+    // custom or reference-axis directions. We freeze the original direction by storing it
+    // as a custom direction, so no runtime version check is needed. See issue #25720.
+
+    if (!UseCustomVector.getValue() && !ReferenceAxis.getValue()) {
+        // Default direction = sketch normal. Freeze it as a custom direction.
+        try {
+            Direction.setValue(getProfileNormal());
+            UseCustomVector.setValue(true);
+        }
+        catch (...) {
+            // Profile not available yet — defer migration to buildExtrusion()
+            return false;
+        }
+    }
+    // For UseCustomVector=true or ReferenceAxis set: direction is already explicit, no change needed.
+
+    ExtrusionVersion.setValue(V11);
+    return true;
+}
+
 void FeatureExtrude::onDocumentRestored()
 {
     // property Type no longer has TwoLengths.
@@ -971,6 +1020,8 @@ void FeatureExtrude::onDocumentRestored()
         Midplane.setValue(false);
         SideType.setValue("Symmetric");
     }
+
+    migrateSymmetricDirection();
 
     ProfileBased::onDocumentRestored();
 }

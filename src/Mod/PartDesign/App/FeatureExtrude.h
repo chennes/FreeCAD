@@ -30,12 +30,23 @@
 #include "FeatureSketchBased.h"
 
 class gp_Dir;
+class TopLoc_Location;
 class TopoDS_Face;
 class TopoDS_Shape;
-class TopLoc_Location;
 
 namespace PartDesign
 {
+
+/**
+ * Controls which extrusion algorithm version is used, for element-map backwards
+ * compatibility with files created before FreeCAD 1.1. Each value corresponds to
+ * a version of FreeCAD in which the algorithm changed.
+ */
+enum ExtrusionVersion : long
+{
+    PreV11 = 0,  ///< Pre-FreeCAD 1.1 algorithm (default for old files)
+    V11 = 1,     ///< FreeCAD 1.1+ algorithm (set by setupObject() for new features)
+};
 
 class PartDesignExport FeatureExtrude: public ProfileBased
 {
@@ -57,6 +68,11 @@ public:
     App::PropertyLength Offset;
     App::PropertyLength Offset2;
     App::PropertyLinkSub ReferenceAxis;
+    /**
+     * Compatibility property that selects which version of the extrusion algorithm is used,
+     * to preserve element-map IDs for files created before FreeCAD 1.1. See issue #25720.
+     */
+    App::PropertyEnumeration ExtrusionVersion;
 
     static App::PropertyQuantityConstraint::Constraints signedLengthConstraint;
     static double maxAngle;
@@ -74,12 +90,21 @@ public:
     //@}
 
     static const char* SideTypesEnums[];
+    static const char* ExtrusionVersionEnums[];
 
 protected:
     void onDocumentRestored() override;
     Base::Vector3d computeDirection(const Base::Vector3d& sketchVector, bool inverse);
     bool hasTaperedAngle() const;
     void onChanged(const App::Property* prop) override;
+
+    /**
+     * Migrates a pre-V11 Symmetric non-Length feature to use an explicit custom direction,
+     * so the mirror plane can always use 'dir' without a runtime version check.
+     * Returns true if migration succeeded (or was not needed), false if deferred.
+     * See issue #25720.
+     */
+    bool migrateSymmetricDirection();
 
 
     /// Options for buildExtrusion()
