@@ -38,14 +38,13 @@ namespace PartDesign
 {
 
 /**
- * Controls which extrusion algorithm version is used, for element-map backwards
- * compatibility with files created before FreeCAD 1.1. Each value corresponds to
- * a version of FreeCAD in which the algorithm changed.
+ * Controls which normal is used for the mirror operation, retained for element-map backwards
+ * compatibility with files created before FreeCAD 1.1. See issue #25720.
  */
-enum ExtrusionVersion : long
+enum class MirrorPlaneNormal : uint8_t
 {
-    PreV11 = 0,  ///< Pre-FreeCAD 1.1 algorithm (default for old files)
-    V11 = 1,     ///< FreeCAD 1.1+ algorithm (set by setupObject() for new features)
+    ExtrusionDirection = 0,  ///< Pre-FreeCAD 1.1 algorithm (default for old files)
+    SketchNormal = 1,        ///< FreeCAD 1.1+ algorithm (set by setupObject() for new features)
 };
 
 class PartDesignExport FeatureExtrude: public ProfileBased
@@ -68,11 +67,8 @@ public:
     App::PropertyLength Offset;
     App::PropertyLength Offset2;
     App::PropertyLinkSub ReferenceAxis;
-    /**
-     * Compatibility property that selects which version of the extrusion algorithm is used,
-     * to preserve element-map IDs for files created before FreeCAD 1.1. See issue #25720.
-     */
-    App::PropertyEnumeration ExtrusionVersion;
+    App::PropertyEnumeration MirrorPlaneNormal;
+    App::PropertyBool UseSinglePrismOptimization;
 
     static App::PropertyQuantityConstraint::Constraints signedLengthConstraint;
     static double maxAngle;
@@ -90,21 +86,13 @@ public:
     //@}
 
     static const char* SideTypesEnums[];
-    static const char* ExtrusionVersionEnums[];
+    static const char* MirrorPlaneNormalEnums[];
 
 protected:
     void onDocumentRestored() override;
     Base::Vector3d computeDirection(const Base::Vector3d& sketchVector, bool inverse);
     bool hasTaperedAngle() const;
     void onChanged(const App::Property* prop) override;
-
-    /**
-     * Migrates a pre-V11 Symmetric non-Length feature to use an explicit custom direction,
-     * so the mirror plane can always use 'dir' without a runtime version check.
-     * Returns true if migration succeeded (or was not needed), false if deferred.
-     * See issue #25720.
-     */
-    bool migrateSymmetricDirection();
 
 
     /// Options for buildExtrusion()
@@ -113,7 +101,7 @@ protected:
         MakeFace = 1,
         MakeFuse = 2,
         LegacyPocket = 4,
-        InverseDirection = 8,
+        InverseDirection = 8
     };
 
     using ExtrudeOptions = Base::Flags<ExtrudeOption>;

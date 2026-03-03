@@ -118,16 +118,25 @@ Pocket::Pocket()
     Length.setConstraints(nullptr);
     Length2.setConstraints(nullptr);
 
-    // Algorithm version flag for element-map backwards compatibility. Defaults to PreV11 for
-    // files created before FreeCAD 1.1. setupObject() sets this to V11 for new features.
+    // Algorithm version flag for element-map backwards compatibility. Defaults to
+    // ExtrusionDirection for files created before FreeCAD 1.1. setupObject() sets this to
+    // SketchNormal for new features.
     ADD_PROPERTY_TYPE(
-        ExtrusionVersion,
-        (PartDesign::PreV11),
+        MirrorPlaneNormal,
+        (static_cast<long>(PartDesign::MirrorPlaneNormal::ExtrusionDirection)),
         "Compatibility",
         App::Prop_Hidden,
-        "Extrusion algorithm version, for element-map backwards compatibility with old files"
+        "Mirror plane normal direction, for element-map backwards compatibility with old files"
     );
-    ExtrusionVersion.setEnums(FeatureExtrude::ExtrusionVersionEnums);
+    MirrorPlaneNormal.setEnums(FeatureExtrude::MirrorPlaneNormalEnums);
+
+    ADD_PROPERTY_TYPE(
+        UseSinglePrismOptimization,
+        (false),
+        "Compatibility",
+        App::Prop_Hidden,
+        "Allow disabling the single-prism optimization for Pocket features for use with older files"
+    );
 }
 
 App::DocumentObjectExecReturn* Pocket::execute()
