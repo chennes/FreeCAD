@@ -911,7 +911,8 @@ public:
     TopoShape& makeElementRefine(
         const TopoShape& shape,
         const char* op = nullptr,
-        RefineFail no_fail = RefineFail::throwException
+        RefineFail no_fail = RefineFail::throwException,
+        bool useGeneratedMapping = false
     );
 
     /** Refine the input shape by merging faces/edges that share the same geometry
@@ -926,10 +927,11 @@ public:
      */
     TopoShape makeElementRefine(
         const char* op = nullptr,
-        RefineFail no_fail = RefineFail::throwException
+        RefineFail no_fail = RefineFail::throwException,
+        bool useGeneratedMapping = false
     ) const
     {
-        return TopoShape(Tag, Hasher).makeElementRefine(*this, op, no_fail);
+        return TopoShape(Tag, Hasher).makeElementRefine(*this, op, no_fail, useGeneratedMapping);
     }
 
 

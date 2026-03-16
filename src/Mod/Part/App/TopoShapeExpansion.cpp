@@ -4864,19 +4864,24 @@ public:
         : BRepBuilderAPI_RefineModel(s)
     {}
 
-    void populate(ShapeMapper& mapper)
+    void populate(ShapeMapper& mapper, MappingStatus status = MappingStatus::Modified)
     {
         for (TopTools_DataMapIteratorOfDataMapOfShapeListOfShape it(this->myModified); it.More();
              it.Next()) {
             if (it.Key().IsNull()) {
                 continue;
             }
-            mapper.populate(MappingStatus::Modified, it.Key(), it.Value());
+            mapper.populate(status, it.Key(), it.Value());
         }
     }
 };
 
-TopoShape& TopoShape::makeElementRefine(const TopoShape& shape, const char* op, RefineFail no_fail)
+TopoShape& TopoShape::makeElementRefine(
+    const TopoShape& shape,
+    const char* op,
+    RefineFail no_fail,
+    bool useGeneratedMapping
+)
 {
     if (shape.isNull()) {
         if (no_fail == RefineFail::throwException) {
@@ -4892,7 +4897,10 @@ TopoShape& TopoShape::makeElementRefine(const TopoShape& shape, const char* op, 
     try {
         MyRefineMaker mkRefine(shape.getShape());
         GenericShapeMapper mapper;
-        mkRefine.populate(mapper);
+        mkRefine.populate(
+            mapper,
+            useGeneratedMapping ? MappingStatus::Generated : MappingStatus::Modified
+        );
         mapper.init(shape, mkRefine.Shape());
         makeShapeWithElementMap(mkRefine.Shape(), mapper, {shape}, op);
         // For some reason, refine operation may reverse the solid

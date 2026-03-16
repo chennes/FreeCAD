@@ -54,6 +54,19 @@ FeatureRefine::FeatureRefine()
                                              ->GetGroup("Preferences")
                                              ->GetGroup("Mod/PartDesign");
     this->Refine.setValue(hGrp->GetBool("RefineModel", true));
+    ADD_PROPERTY_TYPE(
+        _RefineVersion,
+        (0),
+        "Part Design",
+        (App::PropertyType)(App::Prop_Hidden | App::Prop_ReadOnly),
+        "Version of refine element mapping algorithm"
+    );
+}
+
+void FeatureRefine::setupObject()
+{
+    _RefineVersion.setValue(1);
+    Feature::setupObject();
 }
 
 bool FeatureRefine::onlyHaveRefined()
@@ -86,8 +99,9 @@ TopoShape FeatureRefine::refineShapeIfActive(
         return oldShape;
     }
     TopoShape shape(oldShape);
+    bool useGeneratedMapping = _RefineVersion.getValue() < 1;
     try {
-        return shape.makeElementRefine();
+        return shape.makeElementRefine(nullptr, Part::RefineFail::throwException, useGeneratedMapping);
     }
     catch (Standard_Failure& err) {
         if (onError == RefineErrorPolicy::Warn) {

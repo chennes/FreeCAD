@@ -42,8 +42,10 @@ public:
     };
 
     FeatureRefine();
+    void setupObject() override;
 
     App::PropertyBool Refine;
+    App::PropertyInteger _RefineVersion;
 
 protected:
     // store the shape before refinement
