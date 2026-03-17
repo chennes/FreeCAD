@@ -513,7 +513,7 @@ void copyPropertyIfDifferent(
     }
 }
 
-std::string removeUpToName(const std::string& sub, const std::string& name)
+[[maybe_unused]] std::string removeUpToName(const std::string& sub, const std::string& name)
 {
     size_t pos = sub.find(name);
     if (pos != std::string::npos) {
@@ -527,7 +527,7 @@ std::string removeUpToName(const std::string& sub, const std::string& name)
     return sub;
 }
 
-std::string replaceLastOccurrence(
+[[maybe_unused]] std::string replaceLastOccurrence(
     const std::string& str,
     const std::string& oldStr,
     const std::string& newStr
