@@ -1757,7 +1757,7 @@ void System::initSolution(Algorithm alg)
         });
     }
     else {
-        std::ranges::copy_if(clist, std::back_inserter(clistR), [this](auto constr) {
+        std::ranges::copy_if(clist, std::back_inserter(clistR), [](auto constr) {
             return constr->isDriving();
         });
     }
