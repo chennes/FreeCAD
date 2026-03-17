@@ -476,7 +476,7 @@ void QGIRichAnno::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
         // update.
 
         QTimer::singleShot(0, this, [this]() {
-            if (this && scene()) {
+            if (scene()) {
                 Q_EMIT positionChanged();
             }
         });
