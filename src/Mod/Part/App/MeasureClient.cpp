@@ -86,7 +86,7 @@ static float getFaceArea(TopoDS_Shape& face)
     return gprops.Mass();
 }
 
-static float getRadius(TopoDS_Shape& edge)
+[[maybe_unused]] static float getRadius(TopoDS_Shape& edge)
 {
     // gprops.Mass() would be the circumference (length) of the circle (arc)
     if (edge.ShapeType() == TopAbs_EDGE) {
