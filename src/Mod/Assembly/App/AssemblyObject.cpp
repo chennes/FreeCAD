@@ -717,7 +717,11 @@ ViewGroup* AssemblyObject::getExplodedViewGroup() const
     return nullptr;
 }
 
-std::vector<App::DocumentObject*> AssemblyObject::getJoints([[maybe_unused]] bool updateJCS, bool delBadJoints, bool subJoints)
+std::vector<App::DocumentObject*> AssemblyObject::getJoints(
+    [[maybe_unused]] bool updateJCS,
+    bool delBadJoints,
+    bool subJoints
+)
 {
     std::vector<App::DocumentObject*> joints = {};
 
