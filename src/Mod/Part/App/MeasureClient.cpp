@@ -86,29 +86,6 @@ static float getFaceArea(TopoDS_Shape& face)
     return gprops.Mass();
 }
 
-[[maybe_unused]] static float getRadius(TopoDS_Shape& edge)
-{
-    // gprops.Mass() would be the circumference (length) of the circle (arc)
-    if (edge.ShapeType() == TopAbs_EDGE) {
-        BRepAdaptor_Curve adapt(TopoDS::Edge(edge));
-        if (adapt.GetType() != GeomAbs_Circle) {
-            // TODO: not sure what the error handling here should be. nan? 0.0?
-            return 0.0;
-        }
-        gp_Circ circle = adapt.Circle();
-        return circle.Radius();
-    }
-    if (edge.ShapeType() == TopAbs_FACE) {
-        BRepAdaptor_Surface adapt(TopoDS::Face(edge));
-        if (adapt.GetType() != GeomAbs_Cylinder) {
-            return 0.0;
-        }
-        gp_Cylinder cylinder = adapt.Cylinder();
-        return cylinder.Radius();
-    }
-    return 0.0;
-}
-
 TopoDS_Shape getLocatedShape(const App::SubObjectT& subject, Base::Matrix4D* mat = nullptr)
 {
     App::DocumentObject* obj = subject.getSubObjectList().back();

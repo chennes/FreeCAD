@@ -157,7 +157,7 @@ void EditableDatumLabel::deactivate()
     root->whichChild = SO_SWITCH_NONE;
 }
 
-void EditableDatumLabel::startEdit(double /*val*/, QObject* eventFilteringObj, bool visibleToMouse)
+void EditableDatumLabel::startEdit(QObject* eventFilteringObj, bool visibleToMouse)
 {
     if (isInEdit()) {
         return;

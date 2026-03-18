@@ -768,7 +768,7 @@ protected:
                     // points/value will be overridden by the mouseMove triggered by the mode
                     // change.
                     onViewParameters[i]->setPoints(Base::Vector3d(), Base::Vector3d());
-                    onViewParameters[i]->startEdit(0.0, keymanager.get());
+                    onViewParameters[i]->startEdit(keymanager.get());
                 }
             }
         }

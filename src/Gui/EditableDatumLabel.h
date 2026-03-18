@@ -69,7 +69,7 @@ public:
     void activate();
     void deactivate();
 
-    void startEdit(double val, QObject* eventFilteringObj = nullptr, bool visibleToMouse = false);
+    void startEdit(QObject* eventFilteringObj = nullptr, bool visibleToMouse = false);
     void stopEdit();
     bool isActive() const;
     bool isInEdit() const;
