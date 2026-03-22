@@ -2147,7 +2147,7 @@ int SelectionSingleton::checkSelection(
 std::string SelectionSingleton::getSelectedElement(App::DocumentObject* obj, const char* pSubName) const
 {
     if (!obj) {
-        return nullptr;
+        return {};
     }
     auto context = getSelectionContext(obj->getDocument()->getName());
 
