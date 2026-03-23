@@ -2278,7 +2278,7 @@ void _setLineAttributes(TechDraw::CosmeticEdge* cosEdge, int style, float weight
     cosEdge->m_format.setWidth(weight);
     cosEdge->m_format.setColor(color);
     cosEdge->m_format.setVisible(_getActiveLineAttributes().getVisible());
-    cosEdge->m_format.setLineNumber(LineGenerator::fromQtStyle((Qt::PenStyle)style));
+    cosEdge->m_format.setLineNumber(style);
 }
 
 void _setLineAttributes(TechDraw::CenterLine* cosEdge, int style, float weight, Base::Color color)
