@@ -919,7 +919,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-64/zlib-ng-2.3.2-h53ec75d_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/zstd-1.5.7-h3eecb57_6.conda
       - conda: .
-        build: he0f4bc8_0
+        build: hc347f7b_0
       osx-arm64:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/_openmp_mutex-4.5-7_kmp_llvm.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/adwaita-icon-theme-49.0-unix_0.conda
@@ -4408,9 +4408,10 @@ packages:
 - conda: .
   name: freecad
   version: 1.1.0
-  build: he0f4bc8_0
+  build: hc347f7b_0
   subdir: osx-64
   variants:
+    MACOSX_DEPLOYMENT_TARGET: '10.13'
     build_platform: osx-64
     target_platform: osx-64
   depends:
