@@ -121,6 +121,7 @@ jobs:
         with:
           pixi-version: v0.59.0
           cache: false
+          run-install: false
 
       - name: Install the Apple certificate and provisioning profile
         id: macos_get_cert
