@@ -1738,6 +1738,7 @@ def makeWall(
     wall.Align = (
         align if align else ["Center", "Left", "Right"][params.get_param_arch("WallAlignment")]
     )
+    wall.Offset = offset if offset else params.get_param_arch("WallOffset")
 
     if wall.Base and FreeCAD.GuiUp:
         if Draft.getType(wall.Base) != "Space":
