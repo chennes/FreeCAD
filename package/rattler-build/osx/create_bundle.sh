@@ -56,7 +56,7 @@ echo -e "version_name:  ${version_name}"
 echo -e "################"
 
 cp Info.plist.template ${conda_env}/../Info.plist
-sed -i "s/FREECAD_VERSION/${version_name}/" ${conda_env}/../Info.plist
+sed -i "s/FREECAD_VERSION/${BUILD_TAG}/" ${conda_env}/../Info.plist
 sed -i "s/APPLICATION_MENU_NAME/${application_menu_name}/" ${conda_env}/../Info.plist
 
 pixi list -e default > FreeCAD.app/Contents/packages.txt
