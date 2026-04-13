@@ -71,7 +71,6 @@ class HighlightContext:
 
     def _set_color(self, color: highlight_color_t) -> None:
         self._parent_part.ViewObject.DiffuseColor = color
-        self._parent_part.ViewObject.update()
 
     def __enter__(self) -> None:
         self._set_color(self._unhighlighted_color)
@@ -157,7 +156,6 @@ def disambiguate_solid_selection(
             solid_name = None
 
         parent_part.ViewObject.DiffuseColor = highlight_colors_for_solid[solid_name]
-        parent_part.ViewObject.update()
 
     def display_hover(action: QtGui.QAction) -> None:
         if last_action and last_action[0].text() == action.text():
