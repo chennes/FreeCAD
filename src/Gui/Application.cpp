@@ -148,6 +148,11 @@
 #include <ParamHandler.h>
 #include <Base/ServiceProvider.h>
 
+#include <Navigation/NavigationStyle.h>
+#include <Navigation/NavigationStylePy.h>
+#include <Navigation/PythonNavigationStyle.h>
+#include <Navigation/PythonNavigationStylePy.h>
+
 #ifdef BUILD_TRACY_FRAME_PROFILER
 # include <tracy/Tracy.hpp>
 #endif
@@ -654,6 +659,14 @@ Application::Application(bool GUIenabled)
     Base::Interpreter().addType(SoQtOffscreenRendererPy::type_object(),
                                 module,
                                 "SoQtOffscreenRenderer");
+
+    Base::Interpreter().addType(&NavigationStylePy::Type,
+        module,
+        "NavigationStyle");
+
+    Base::Interpreter().addType(&PythonNavigationStylePy::Type,
+        module,
+        "PythonNavigationStyle");
 
     App::Application::Config()["COIN_VERSION"] = COIN_VERSION;
 

@@ -59,6 +59,7 @@
 #include "Navigation/GestureNavigationStyle.h"
 #include "Navigation/NavigationStyle.h"
 #include "Navigation/SiemensNXNavigationStyle.h"
+#include "Navigation/PythonNavigationStyle.h"
 #include "SelectionObject.h"
 #include "SoDevicePixelRatioElement.h"
 #include "SoFCColorBar.h"
@@ -213,10 +214,11 @@ void Gui::SoFCDB::init()
     BlenderNavigationStyle ::init();
     CADNavigationStyle ::init();
     GestureNavigationStyle ::init();
+    InventorNavigationStyle ::init();
     MayaGestureNavigationStyle ::init();
     OpenCascadeNavigationStyle ::init();
-    InventorNavigationStyle ::init();
     OpenSCADNavigationStyle ::init();
+    PythonNavigationStyle ::init();
     RevitNavigationStyle ::init();
     SiemensNXNavigationStyle ::init();
     SolidWorksNavigationStyle ::init();

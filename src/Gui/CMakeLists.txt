@@ -338,24 +338,27 @@ generate_from_py(ViewProviderLink)
 generate_from_py(AxisOrigin)
 generate_from_py(Command)
 generate_from_py(Navigation/NavigationStyle)
+generate_from_py(Navigation/PythonNavigationStyle)
 
 generate_embed_from_py(FreeCADGuiInit GuiInitScript.h)
 generate_embed_from_py(FreeCADGuiTest GuiTestScript.h)
 
 # The Pyi files
 SET(FreeCADGui_Pyi_SRCS
-    ViewProviderDocumentObject.pyi
-    ViewProviderGeometryObject.pyi
-    ViewProvider.pyi
-    ViewProviderExtension.pyi
-    PythonWorkbench.pyi
-    Workbench.pyi
-    Selection/SelectionObject.pyi
-    Document.pyi
-    LinkView.pyi
-    ViewProviderLink.pyi
     AxisOrigin.pyi
     Command.pyi
+    Document.pyi
+    LinkView.pyi
+    PythonWorkbench.pyi
+    ViewProvider.pyi
+    ViewProviderDocumentObject.pyi
+    ViewProviderExtension.pyi
+    ViewProviderGeometryObject.pyi
+    ViewProviderLink.pyi
+    Workbench.pyi
+    Navigation/NavigationStyle.pyi
+    Navigation/PythonNavigationStyle.pyi
+    Selection/SelectionObject.pyi
 )
 SOURCE_GROUP("Pyi" FILES ${FreeCADGui_Pyi_SRCS})
 
@@ -1000,18 +1003,20 @@ SET(Navigation_CPP_SRCS
     Navigation/NavigationStateChart.cpp
     Navigation/NavigationStyle.cpp
     Navigation/NavigationStylePyImp.cpp
-    Navigation/InventorNavigationStyle.cpp
-    Navigation/CADNavigationStyle.cpp
-    Navigation/RevitNavigationStyle.cpp
     Navigation/BlenderNavigationStyle.cpp
-    Navigation/SiemensNXNavigationStyle.cpp
-    Navigation/SolidWorksNavigationStyle.cpp
+    Navigation/CADNavigationStyle.cpp
+    Navigation/GestureNavigationStyle.cpp
+    Navigation/InventorNavigationStyle.cpp
     Navigation/MayaGestureNavigationStyle.cpp
     Navigation/OpenCascadeNavigationStyle.cpp
     Navigation/OpenSCADNavigationStyle.cpp
+    Navigation/PythonNavigationStyle.cpp
+    Navigation/PythonNavigationStylePyImp.cpp
+    Navigation/RevitNavigationStyle.cpp
+    Navigation/SiemensNXNavigationStyle.cpp
+    Navigation/SolidWorksNavigationStyle.cpp
     Navigation/TinkerCADNavigationStyle.cpp
     Navigation/TouchpadNavigationStyle.cpp
-    Navigation/GestureNavigationStyle.cpp
     Navigation/NavigationAnimator.cpp
     Navigation/NavigationAnimation.cpp
 )
@@ -1021,6 +1026,8 @@ SET(Navigation_SRCS
     Navigation/NavigationStyle.h
     Navigation/NavigationStyle.pyi
     Navigation/GestureNavigationStyle.h
+    Navigation/PythonNavigationStyle.h
+    Navigation/PythonNavigationStyle.pyi
     Navigation/NavigationAnimator.h
     Navigation/NavigationAnimation.h
     Navigation/SiemensNXNavigationStyle.h

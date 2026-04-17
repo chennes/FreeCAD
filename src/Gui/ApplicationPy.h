@@ -114,6 +114,11 @@ public:
     static PyObject* sSuspendWaitCursor        (PyObject *self, PyObject *args);
     static PyObject* sResumeWaitCursor         (PyObject *self, PyObject *args);
 
+    static PyObject* sAddNavigationStyle       (PyObject *self, PyObject *args);
+    static PyObject* sRemoveNavigationStyle    (PyObject *self, PyObject *args);
+    static PyObject* sGetNavigationStyles      (PyObject *self, PyObject *args);
+    static PyObject* sGetNavigationStyle       (PyObject *self, PyObject *args);
+
     static PyMethodDef    Methods[];
     // clang-format on
 };

@@ -24,9 +24,7 @@
 #include <QDir>
 #include <QPrinter>
 #include <QFileInfo>
-#include <Inventor/SoInput.h>
-#include <Inventor/actions/SoGetPrimitiveCountAction.h>
-#include <Inventor/nodes/SoSeparator.h>
+
 #include <xercesc/util/TranscodingException.hpp>
 #include <xercesc/util/XMLString.hpp>
 
@@ -66,8 +64,14 @@
 #include "Workbench.h"
 #include "WorkbenchManager.h"
 #include "WorkbenchManipulatorPython.h"
-#include "Inventor/MarkerBitmaps.h"
-#include "Language/Translator.h"
+
+#include <Inventor/SoInput.h>
+#include <Inventor/actions/SoGetPrimitiveCountAction.h>
+#include <Inventor/nodes/SoSeparator.h>
+#include <Inventor/MarkerBitmaps.h>
+#include <Language/Translator.h>
+#include <Navigation/PythonNavigationStyle.h>
+#include <Navigation/PythonNavigationStylePy.h>
 
 
 using namespace Gui;
@@ -550,6 +554,26 @@ PyMethodDef ApplicationPy::Methods[] = {
      METH_VARARGS,
      "resumeWaitCursor() -> None\n\n"
      "Resumes the application's wait cursor and event filter."},
+    {"addNavigationStyle",
+     (PyCFunction)ApplicationPy::sAddNavigationStyle,
+     METH_VARARGS,
+     "addNavigationStyle(name, cls) -> None\n\n"
+     "Add a new Navigation Style"},
+    {"removeNavigationStyle",
+     (PyCFunction)ApplicationPy::sRemoveNavigationStyle,
+     METH_VARARGS,
+     "removeNavigationStyle(name) -> None\n\n"
+     "Remove an existing installed Python-based Navigation Style"},
+    {"getNavigationStyles",
+     (PyCFunction)ApplicationPy::sGetNavigationStyles,
+     METH_VARARGS,
+     "getNavigationStyles() -> List[str]\n\n"
+     "Get a list of existing Python-based Navigation styles"},
+    {"getNavigationStyle",
+     (PyCFunction)ApplicationPy::sGetNavigationStyle,
+     METH_VARARGS,
+     "getNavigationStyle(name) -> PythonNavigationStyle\n\n"
+     "Get an existing Python-based Navigation style"},
     {nullptr, nullptr, 0, nullptr} /* Sentinel */
 };
 
@@ -1953,4 +1977,62 @@ PyObject* ApplicationPy::sResumeWaitCursor(PyObject* /*self*/, PyObject* args)
 
     WaitCursor::resume();
     Py_RETURN_NONE;
+}
+
+PyObject* ApplicationPy::sAddNavigationStyle(PyObject* /*self*/, PyObject* args)
+{
+    const char* name = "";
+    PyObject* navStyle = nullptr;
+    if (!PyArg_ParseTuple(args, "sO!", &name, &PythonNavigationStylePy::Type, &navStyle)) {
+        return nullptr;
+    }
+
+    Py::Object styleObject {navStyle};
+    PythonNavigationStyle::registry().addStyle(name, styleObject);
+
+    Py_RETURN_NONE;
+}
+
+PyObject* ApplicationPy::sRemoveNavigationStyle(PyObject* /*self*/, PyObject* args)
+{
+    const char* name = "";
+    if (!PyArg_ParseTuple(args, "s", &name)) {
+        return nullptr;
+    }
+
+    PythonNavigationStyle::registry().removeStyle(name);
+
+    Py_RETURN_NONE;
+}
+
+PyObject* ApplicationPy::sGetNavigationStyles(PyObject* /*self*/, PyObject* args)
+{
+    Py::List ret;
+    if (!PyArg_ParseTuple(args, "")) {
+        return nullptr;
+    }
+
+    auto styles = PythonNavigationStyle::registry().getStyles();
+    for (auto const& style : styles) {
+        ret.append(Py::String(style));
+    }
+
+    return Py::new_reference_to(ret);
+}
+
+PyObject* ApplicationPy::sGetNavigationStyle(PyObject* /*self*/, PyObject* args)
+{
+    const char* name = "";
+    if (!PyArg_ParseTuple(args, "s", &name)) {
+        return nullptr;
+    }
+
+    try {
+        Py::Object styleObject {PythonNavigationStyle::registry().getStyle(name)};
+        return Py::new_reference_to(styleObject);
+    }
+    catch (...) {
+        PyErr_Format(PyExc_NameError, "Invalid navigation style '%s'", name);
+        return nullptr;
+    }
 }

@@ -7,11 +7,12 @@ add_subdirectory(propertyeditor)
 add_executable(Gui_tests_run
         Assistant.cpp
         Camera.cpp
+        InputHintTest.cpp
+        NavigationStyle.cpp
         StyleParameters/StyleParametersApplicationTest.cpp
         StyleParameters/ParserTest.cpp
         StyleParameters/ParameterManagerTest.cpp
         StyleParameters/YamlParameterSourceTest.cpp
-        InputHintTest.cpp
 )
 
 # Qt tests
