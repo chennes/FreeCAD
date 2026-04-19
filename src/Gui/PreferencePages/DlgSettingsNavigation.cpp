@@ -33,6 +33,7 @@
 #include <Gui/MainWindow.h>
 #include <Gui/View3DSettings.h>
 #include <Gui/Navigation/NavigationStyle.h>
+#include <Gui/Navigation/PythonNavigationStyle.h>
 #include <Gui/View3DInventor.h>
 #include <Gui/View3DInventorViewer.h>
 
@@ -83,7 +84,7 @@ void DlgSettingsNavigation::saveSettings()
     );
     QVariant data
         = ui->comboNavigationStyle->itemData(ui->comboNavigationStyle->currentIndex(), Qt::UserRole);
-    hGrp->SetASCII("NavigationStyle", (const char*)data.toByteArray());
+    hGrp->SetASCII("NavigationStyle", data.toString().toStdString().c_str());
 
     int index = ui->comboOrbitStyle->currentIndex();
     hGrp->SetInt("OrbitStyle", index);
@@ -164,9 +165,9 @@ void DlgSettingsNavigation::loadSettings()
     ParameterGrp::handle hGrp = App::GetApplication().GetParameterGroupByPath(
         "User parameter:BaseApp/Preferences/View"
     );
-    std::string model
+    std::string navStyleName
         = hGrp->GetASCII("NavigationStyle", CADNavigationStyle::getClassTypeId().getName());
-    int index = ui->comboNavigationStyle->findData(QByteArray(model.c_str()));
+    int index = ui->comboNavigationStyle->findData(QString::fromStdString(navStyleName));
     if (index > -1) {
         ui->comboNavigationStyle->setCurrentIndex(index);
     }
@@ -302,28 +303,59 @@ void DlgSettingsNavigation::onMouseButtonClicked()
 
     QVariant data
         = ui->comboNavigationStyle->itemData(ui->comboNavigationStyle->currentIndex(), Qt::UserRole);
-    void* instance = Base::Type::createInstanceByName((const char*)data.toByteArray());
-    std::unique_ptr<UserNavigationStyle> ns(static_cast<UserNavigationStyle*>(instance));
+    auto canonicalStyleName = data.toString().toStdString();
+
+    auto pythonNavStyles = PythonNavigationStyle::registry().getStyles();
+    if (std::ranges::find(pythonNavStyles, canonicalStyleName) != pythonNavStyles.end()) {
+        // TODO: Handle this Python nav style
+        return;
+    }
+
+    std::vector<Base::Type> types;
+    Base::Type::getAllDerivedFrom(UserNavigationStyle::getClassTypeId(), types);
+
+    std::unique_ptr<UserNavigationStyle> instance {nullptr};
+    for (auto& type : types) {
+        if (type != UserNavigationStyle::getClassTypeId()
+            && type != PythonNavigationStyle::getClassTypeId()) {
+            std::unique_ptr<UserNavigationStyle> inst(
+                static_cast<UserNavigationStyle*>(type.createInstance())
+            );
+            if (inst) {
+                if (inst->userFriendlyName() == canonicalStyleName) {
+                    instance = std::move(inst);
+                    break;
+                }
+            }
+        }
+    }
+
     uimb.groupBox->setTitle(
         uimb.groupBox->title() + QStringLiteral(" ") + ui->comboNavigationStyle->currentText()
     );
     QString descr;
     descr = qApp->translate(
         (const char*)data.toByteArray(),
-        ns->mouseButtons(NavigationStyle::SELECTION)
+        instance->mouseButtons(NavigationStyle::SELECTION)
     );
     descr.replace(QLatin1String("\n"), QLatin1String("<p>"));
     uimb.selectionLabel->setText(QStringLiteral("<b>%1</b>").arg(descr));
-    descr = qApp->translate((const char*)data.toByteArray(), ns->mouseButtons(NavigationStyle::PANNING));
+    descr = qApp->translate(
+        (const char*)data.toByteArray(),
+        instance->mouseButtons(NavigationStyle::PANNING)
+    );
     descr.replace(QLatin1String("\n"), QLatin1String("<p>"));
     uimb.panningLabel->setText(QStringLiteral("<b>%1</b>").arg(descr));
     descr = qApp->translate(
         (const char*)data.toByteArray(),
-        ns->mouseButtons(NavigationStyle::DRAGGING)
+        instance->mouseButtons(NavigationStyle::DRAGGING)
     );
     descr.replace(QLatin1String("\n"), QLatin1String("<p>"));
     uimb.rotationLabel->setText(QStringLiteral("<b>%1</b>").arg(descr));
-    descr = qApp->translate((const char*)data.toByteArray(), ns->mouseButtons(NavigationStyle::ZOOMING));
+    descr = qApp->translate(
+        (const char*)data.toByteArray(),
+        instance->mouseButtons(NavigationStyle::ZOOMING)
+    );
     descr.replace(QLatin1String("\n"), QLatin1String("<p>"));
     uimb.zoomingLabel->setText(QStringLiteral("<b>%1</b>").arg(descr));
     dlg.exec();
@@ -355,12 +387,10 @@ void DlgSettingsNavigation::retranslate()
     ui->comboNavigationStyle->clear();
 
     // add submenu at the end to select navigation style
-    std::map<Base::Type, std::string> styles = UserNavigationStyle::getUserFriendlyNames();
+    auto styles = UserNavigationStyle::getUserFriendlyNames();
     for (const auto& style : styles) {
-        QByteArray data(style.first.getName());
-        QString name = QApplication::translate(style.first.getName(), style.second.c_str());
-
-        ui->comboNavigationStyle->addItem(name, data);
+        QString translatedName = QApplication::translate("NavigationStyle", style.c_str());
+        ui->comboNavigationStyle->addItem(translatedName, QString::fromStdString(style));
     }
 }
 

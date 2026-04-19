@@ -54,6 +54,7 @@
 #include "Inventor/SoMouseWheelEvent.h"
 #include "MenuManager.h"
 #include "MouseSelection.h"
+#include "PythonNavigationStyle.h"
 #include "Navigation/NavigationAnimator.h"
 #include "Navigation/NavigationAnimation.h"
 #include "SoFullPathHelper.h"
@@ -2128,21 +2129,26 @@ std::string UserNavigationStyle::userFriendlyName() const
     return name;
 }
 
-std::map<Base::Type, std::string> UserNavigationStyle::getUserFriendlyNames()
+std::vector<std::string> UserNavigationStyle::getUserFriendlyNames()
 {
-    std::map<Base::Type, std::string> names;
+    std::vector<std::string> names;
     std::vector<Base::Type> types;
     Base::Type::getAllDerivedFrom(UserNavigationStyle::getClassTypeId(), types);
 
     for (auto& type : types) {
-        if (type != UserNavigationStyle::getClassTypeId()) {
+        if (type != UserNavigationStyle::getClassTypeId()
+            && type != PythonNavigationStyle::getClassTypeId()) {
             std::unique_ptr<UserNavigationStyle> inst(
                 static_cast<UserNavigationStyle*>(type.createInstance())
             );
             if (inst) {
-                names[type] = inst->userFriendlyName();
+                names.push_back(inst->userFriendlyName());
             }
         }
     }
+    for (const auto& pythonNavStyle : PythonNavigationStyle::registry().getStyles()) {
+        names.push_back(pythonNavStyle);
+    }
+    std::ranges::sort(names);
     return names;
 }

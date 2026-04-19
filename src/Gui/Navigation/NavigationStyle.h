@@ -361,7 +361,7 @@ public:
     ~UserNavigationStyle() override = default;
     virtual const char* mouseButtons(ViewerMode) = 0;
     virtual std::string userFriendlyName() const;
-    static std::map<Base::Type, std::string> getUserFriendlyNames();
+    static std::vector<std::string> getUserFriendlyNames();
 };
 
 class GuiExport InventorNavigationStyle: public UserNavigationStyle

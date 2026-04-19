@@ -94,3 +94,26 @@ TEST_F(NavigationStyleRegistryTest, RemoveStyleRemovesAStyle)
     auto remainingStyle = registry.getStyle("My other great style");
     EXPECT_NE(remainingStyle.ptr(), Py::None().ptr());
 }
+
+TEST_F(NavigationStyleRegistryTest, GetUserFriendlyNamesIncludesPythonStyles)
+{
+    // Arrange
+    auto originalStyles = Gui::UserNavigationStyle::getUserFriendlyNames();
+    Py::Object class1 {Py::String("Glitter rainbows class")};
+
+    // Act -- Add a new style and get the list of names
+    Gui::PythonNavigationStyle::registry().addStyle("Glitter rainbows", class1);
+    auto newStyles = Gui::UserNavigationStyle::getUserFriendlyNames();
+
+    // Assert
+    EXPECT_EQ(originalStyles.size() + 1, newStyles.size());
+    EXPECT_NE(std::ranges::find(newStyles, "Glitter rainbows"), originalStyles.end());
+
+    // Act -- Remove that style and get the list of names
+    Gui::PythonNavigationStyle::registry().removeStyle("Glitter rainbows");
+    auto revertedStyles = Gui::UserNavigationStyle::getUserFriendlyNames();
+
+    // Assert
+    EXPECT_EQ(originalStyles.size(), revertedStyles.size());
+    EXPECT_EQ(std::ranges::find(revertedStyles, "Glitter rainbows"), originalStyles.end());
+}

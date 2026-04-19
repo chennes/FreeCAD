@@ -35,6 +35,7 @@
 #include "SoFCSelectionAction.h"
 #include "View3DSettings.h"
 #include "View3DInventorViewer.h"
+#include "Navigation/PythonNavigationStyle.h"
 
 #include <Base/Tools.h>
 
@@ -290,7 +291,13 @@ void View3DSettings::OnChange(ParameterGrp::SubjectType& rCaller, ParameterGrp::
             // check whether the simple or the full mouse model is used
             std::string model
                 = rGrp.GetASCII("NavigationStyle", CADNavigationStyle::getClassTypeId().getName());
-            Base::Type type = Base::Type::fromName(model.c_str());
+            Base::Type type;
+            try {
+                type = Base::Type::fromName(model.c_str());
+            }
+            catch (...) {
+                // TODO: See if it's in the Python registry
+            }
             for (auto _viewer : _viewers) {
                 _viewer->setNavigationType(type);
             }

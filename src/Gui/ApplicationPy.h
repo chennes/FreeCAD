@@ -118,6 +118,8 @@ public:
     static PyObject* sRemoveNavigationStyle    (PyObject *self, PyObject *args);
     static PyObject* sGetNavigationStyles      (PyObject *self, PyObject *args);
     static PyObject* sGetNavigationStyle       (PyObject *self, PyObject *args);
+    static PyObject* sGetNavigationStylePrefix (PyObject *self, PyObject *args);
+
 
     static PyMethodDef    Methods[];
     // clang-format on

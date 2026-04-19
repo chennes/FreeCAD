@@ -244,12 +244,12 @@ void GeneralSettingsWidget::retranslateUi()
     );
     auto navStyleName
         = hGrpNav->GetASCII("NavigationStyle", Gui::CADNavigationStyle::getClassTypeId().getName());
-    std::map<Base::Type, std::string> styles = Gui::UserNavigationStyle::getUserFriendlyNames();
+    std::vector<std::string> styles = Gui::UserNavigationStyle::getUserFriendlyNames();
     for (const auto& style : styles) {
-        QByteArray data(style.first.getName());
-        QString name = QApplication::translate(style.first.getName(), style.second.c_str());
-        _navigationStyleComboBox->addItem(name, data);
-        if (navStyleName == style.first.getName()) {
+        QString canonicalName = QString::fromStdString(style);
+        QString translatedName = QApplication::translate("NavigationStyle", style.c_str());
+        _navigationStyleComboBox->addItem(translatedName, canonicalName);
+        if (navStyleName == style) {
             _navigationStyleComboBox->setCurrentIndex(_navigationStyleComboBox->count() - 1);
         }
     }

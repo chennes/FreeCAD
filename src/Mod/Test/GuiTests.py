@@ -18,7 +18,10 @@ class TestPythonNavigationStyleRegistry(unittest.TestCase):
     def _clear_styles(self):
         style_names = FreeCADGui.getNavigationStyles()
         for name in style_names:
-            FreeCADGui.removeNavigationStyle(name)
+            try:
+                FreeCADGui.removeNavigationStyle(name)
+            except NameError:
+                pass  # Cannot remove C++ nav styles, that's OK
 
     def setUp(self):
         """A little stupid, since the setup and teardown basically also test the functionality of
@@ -26,7 +29,9 @@ class TestPythonNavigationStyleRegistry(unittest.TestCase):
         style_names = FreeCADGui.getNavigationStyles()
         self.nav_styles = {}
         for name in style_names:
-            self.nav_styles[name] = FreeCADGui.getNavigationStyle(name)
+            style_object = FreeCADGui.getNavigationStyle(name)
+            if style_object:
+                self.nav_styles[name] = style_object
         self._clear_styles()
 
     def tearDown(self):
@@ -55,7 +60,10 @@ class TestPythonNavigationStyleRegistry(unittest.TestCase):
         FreeCADGui.addNavigationStyle("Explosions some of the time", ExplosionsNavigationStyle())
         FreeCADGui.addNavigationStyle("Explosions none of the time", ExplosionsNavigationStyle())
         styles = FreeCADGui.getNavigationStyles()
-        self.assertEqual(len(styles), 3)
+        self.assertGreaterEqual(len(styles), 3)
+        self.assertIn("Explosions all the time", styles)
+        self.assertIn("Explosions some of the time", styles)
+        self.assertIn("Explosions none of the time", styles)
 
     def test_get_navigation_style(self):
         """getNavigationStyle returns the expected style object."""

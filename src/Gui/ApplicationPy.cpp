@@ -573,7 +573,7 @@ PyMethodDef ApplicationPy::Methods[] = {
      (PyCFunction)ApplicationPy::sGetNavigationStyle,
      METH_VARARGS,
      "getNavigationStyle(name) -> PythonNavigationStyle\n\n"
-     "Get an existing Python-based Navigation style"},
+     "Get an existing Python-based Navigation style -- returns None if passed a C++ nav-style"},
     {nullptr, nullptr, 0, nullptr} /* Sentinel */
 };
 
@@ -2000,7 +2000,16 @@ PyObject* ApplicationPy::sRemoveNavigationStyle(PyObject* /*self*/, PyObject* ar
         return nullptr;
     }
 
-    PythonNavigationStyle::registry().removeStyle(name);
+    auto pythonNavStyles = PythonNavigationStyle::registry().getStyles();
+    if (std::ranges::find(pythonNavStyles, name) != pythonNavStyles.end()) {
+        PythonNavigationStyle::registry().removeStyle(name);
+    }
+    else {
+        // Either it's a C++ nav style, or it doesn't exist at all. In either case, this operation
+        // fails.
+        PyErr_Format(PyExc_NameError, "Cannot remove navigation style '%s'", name);
+        return nullptr;
+    }
 
     Py_RETURN_NONE;
 }
@@ -2012,9 +2021,9 @@ PyObject* ApplicationPy::sGetNavigationStyles(PyObject* /*self*/, PyObject* args
         return nullptr;
     }
 
-    auto styles = PythonNavigationStyle::registry().getStyles();
-    for (auto const& style : styles) {
-        ret.append(Py::String(style));
+    auto names = UserNavigationStyle::getUserFriendlyNames();
+    for (auto const& name : names) {
+        ret.append(Py::String(name));
     }
 
     return Py::new_reference_to(ret);
@@ -2032,7 +2041,7 @@ PyObject* ApplicationPy::sGetNavigationStyle(PyObject* /*self*/, PyObject* args)
         return Py::new_reference_to(styleObject);
     }
     catch (...) {
-        PyErr_Format(PyExc_NameError, "Invalid navigation style '%s'", name);
+        PyErr_Format(PyExc_NameError, "Cannot get navigation style '%s'", name);
         return nullptr;
     }
 }
