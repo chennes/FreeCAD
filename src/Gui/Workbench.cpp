@@ -764,7 +764,8 @@ MenuItem* StdWorkbench::setupMenuBar() const
     if (DockWindowManager::instance()->isOverlayActivated()) {
         *view << "Std_DockOverlay";
     }
-    *view << "Separator"
+    *view << "Std_ToggleBottomPanels"
+          << "Separator"
           << "Std_LinkSelectActions"
           << "Std_TreeViewActions"
           << "Std_ViewStatusBar";
@@ -779,6 +780,7 @@ MenuItem* StdWorkbench::setupMenuBar() const
     }
 #endif
     *tool << "Std_Measure"
+          << "Std_MassProperties"
           << "Std_AnnotationLabel"
           << "Std_UnitsCalculator"
           << "Std_ClarifySelection"

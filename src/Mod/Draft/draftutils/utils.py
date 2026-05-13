@@ -31,6 +31,7 @@ This module contains auxiliary functions which can be used
 in other modules of the workbench, and which don't require
 the graphical user interface (GUI).
 """
+
 ## @package utils
 # \ingroup draftutils
 # \brief Provides general utility functions used throughout the workbench.
@@ -541,14 +542,9 @@ def shapify(obj, delete=True):
     elif len(shape.Wires) == 1:
         name = "Wire"
     elif len(shape.Edges) == 1:
-        import DraftGeomUtils
-
-        if DraftGeomUtils.geomType(shape.Edges[0]) == "Line":
-            name = "Line"
-        else:
-            name = "Circle"
+        name = "Edge"
     else:
-        name = getRealName(obj.Name)
+        name = get_real_name(obj.Name)
 
     if delete:
         App.ActiveDocument.removeObject(obj.Name)

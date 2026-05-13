@@ -96,6 +96,7 @@
 #include "OCCError.h"
 #include "PartFeature.h"
 #include "PartPyCXX.h"
+#include "PyException.h"
 #include "Tools.h"
 #include "TopoShapeCompoundPy.h"
 #include "TopoShapePy.h"
@@ -349,15 +350,9 @@ private:
         PyObject* shape;
         PyObject* enforce;
         double prec = 0.0;
-        if (!PyArg_ParseTuple(
-                args.ptr(),
-                "O!O!|d",
-                &TopoShapePy::Type,
-                &shape,
-                &PyBool_Type,
-                &enforce,
-                &prec
-            )) {
+        if (
+            !PyArg_ParseTuple(args.ptr(), "O!O!|d", &TopoShapePy::Type, &shape, &PyBool_Type, &enforce, &prec)
+        ) {
             throw Py::Exception();
         }
 
@@ -798,76 +793,22 @@ public:
 private:
     Py::Object invoke_method_keyword(void* method_def, const Py::Tuple& args, const Py::Dict& keywords) override
     {
-        try {
-            return Py::ExtensionModule<Module>::invoke_method_keyword(method_def, args, keywords);
-        }
-        catch (const Standard_Failure& e) {
-            std::string str;
-            Standard_CString msg = e.GetMessageString();
-            str += typeid(e).name();
-            str += " ";
-            if (msg) {
-                str += msg;
-            }
-            else {
-                str += "No OCCT Exception Message";
-            }
-            Base::Console().error("%s\n", str.c_str());
-            throw Py::Exception(Part::PartExceptionOCCError, str);
-        }
-        catch (const Base::Exception& e) {
-            std::string str;
-            str += "FreeCAD exception thrown (";
-            str += e.what();
-            str += ")";
-            e.reportException();
-            throw Py::RuntimeError(str);
-        }
-        catch (const std::exception& e) {
-            std::string str;
-            str += "C++ exception thrown (";
-            str += e.what();
-            str += ")";
-            Base::Console().error("%s\n", str.c_str());
-            throw Py::RuntimeError(str);
-        }
+        return Part::pyWrapCppExceptions(
+            [&]() {
+                return Py::ExtensionModule<Module>::invoke_method_keyword(method_def, args, keywords);
+            },
+            Part::PartExceptionOCCError,
+            true
+        );
     }
 
     Py::Object invoke_method_varargs(void* method_def, const Py::Tuple& args) override
     {
-        try {
-            return Py::ExtensionModule<Module>::invoke_method_varargs(method_def, args);
-        }
-        catch (const Standard_Failure& e) {
-            std::string str;
-            Standard_CString msg = e.GetMessageString();
-            str += typeid(e).name();
-            str += " ";
-            if (msg) {
-                str += msg;
-            }
-            else {
-                str += "No OCCT Exception Message";
-            }
-            Base::Console().error("%s\n", str.c_str());
-            throw Py::Exception(Part::PartExceptionOCCError, str);
-        }
-        catch (const Base::Exception& e) {
-            std::string str;
-            str += "FreeCAD exception thrown (";
-            str += e.what();
-            str += ")";
-            e.reportException();
-            throw Py::RuntimeError(str);
-        }
-        catch (const std::exception& e) {
-            std::string str;
-            str += "C++ exception thrown (";
-            str += e.what();
-            str += ")";
-            Base::Console().error("%s\n", str.c_str());
-            throw Py::RuntimeError(str);
-        }
+        return Part::pyWrapCppExceptions(
+            [&]() { return Py::ExtensionModule<Module>::invoke_method_varargs(method_def, args); },
+            Part::PartExceptionOCCError,
+            true
+        );
     }
 
     Py::Object open(const Py::Tuple& args)
@@ -1899,7 +1840,9 @@ private:
     {
         double pitch, height, radius, angle = -1.0;
         PyObject* pleft = Py_False;
-        if (!PyArg_ParseTuple(args.ptr(), "ddd|dO!", &pitch, &height, &radius, &angle, &(PyBool_Type), &pleft)) {
+        if (
+            !PyArg_ParseTuple(args.ptr(), "ddd|dO!", &pitch, &height, &radius, &angle, &(PyBool_Type), &pleft)
+        ) {
             throw Py::RuntimeError("Part.makeLongHelix fails on parms");
         }
 
@@ -2257,15 +2200,9 @@ private:
         PyObject* shape;
         PyObject* list;
         PyObject* checkInterior = Py_True;
-        if (!PyArg_ParseTuple(
-                args.ptr(),
-                "O!O|O!",
-                &(TopoShapePy::Type),
-                &shape,
-                &list,
-                &PyBool_Type,
-                &checkInterior
-            )) {
+        if (
+            !PyArg_ParseTuple(args.ptr(), "O!O|O!", &(TopoShapePy::Type), &shape, &list, &PyBool_Type, &checkInterior)
+        ) {
             throw Py::Exception();
         }
 

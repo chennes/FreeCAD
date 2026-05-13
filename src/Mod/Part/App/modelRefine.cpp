@@ -32,6 +32,7 @@
 #include <BRepAdaptor_Curve.hxx>
 #include <BRepBndLib.hxx>
 #include <BRepGProp.hxx>
+#include <BRepLib.hxx>
 #include <BRepLib_FuseEdges.hxx>
 #include <BRepLib_MakeWire.hxx>
 #include <BRepBuilderAPI_MakeFace.hxx>
@@ -352,9 +353,8 @@ static Handle(Geom_Plane) getGeomPlane(const TopoDS_Face& faceIn)
     if (!surface.IsNull()) {
         planeSurfaceOut = Handle(Geom_Plane)::DownCast(surface);
         if (planeSurfaceOut.IsNull()) {
-            Handle(Geom_RectangularTrimmedSurface) trimmedSurface = Handle(
-                Geom_RectangularTrimmedSurface
-            )::DownCast(surface);
+            Handle(Geom_RectangularTrimmedSurface)
+                trimmedSurface = Handle(Geom_RectangularTrimmedSurface)::DownCast(surface);
             if (!trimmedSurface.IsNull()) {
                 planeSurfaceOut = Handle(Geom_Plane)::DownCast(trimmedSurface->BasisSurface());
             }
@@ -454,9 +454,8 @@ static Handle(Geom_CylindricalSurface) getGeomCylinder(const TopoDS_Face& faceIn
     if (!surface.IsNull()) {
         cylinderSurfaceOut = Handle(Geom_CylindricalSurface)::DownCast(surface);
         if (cylinderSurfaceOut.IsNull()) {
-            Handle(Geom_RectangularTrimmedSurface) trimmedSurface = Handle(
-                Geom_RectangularTrimmedSurface
-            )::DownCast(surface);
+            Handle(Geom_RectangularTrimmedSurface)
+                trimmedSurface = Handle(Geom_RectangularTrimmedSurface)::DownCast(surface);
             if (!trimmedSurface.IsNull()) {
                 cylinderSurfaceOut = Handle(Geom_CylindricalSurface)::DownCast(
                     trimmedSurface->BasisSurface()
@@ -510,11 +509,13 @@ const TopoDS_Face fixFace(const TopoDS_Face& f)
         return dummy;
     }
     faceFixer.FixMissingSeam();
+    faceFixer.SetContext(new ShapeBuild_ReShape());
     faceFixer.Perform();
     if (faceFixer.Status(ShapeExtend_FAIL)) {
         return dummy;
     }
     faceFixer.FixOrientation();
+    faceFixer.SetContext(new ShapeBuild_ReShape());
     faceFixer.Perform();
     if (faceFixer.Status(ShapeExtend_FAIL)) {
         return dummy;
@@ -569,7 +570,15 @@ bool wireEncirclesAxis(const TopoDS_Wire& wire, const Handle(Geom_CylindricalSur
         else {
             // Linearize the edge. Idea taken from ShapeAnalysis.cxx ShapeAnalysis::TotCross2D()
             TColgp_SequenceOfPnt SeqPnt;
-            ShapeAnalysis_Curve::GetSamplePoints(adapt.Curve().Curve(), fp, lp, SeqPnt);
+            // If the edge has no 3d curve try to create it
+            if (adapt.IsCurveOnSurface()) {
+                if (BRepLib::BuildCurves3d(segment)) {
+                    adapt.Initialize(segment);
+                }
+            }
+            if (adapt.Is3DCurve()) {
+                ShapeAnalysis_Curve::GetSamplePoints(adapt.Curve().Curve(), fp, lp, SeqPnt);
+            }
 
             // Calculate the oriented length of the edge
             gp_Pnt begin;
@@ -862,12 +871,10 @@ FaceTypedBSpline::FaceTypedBSpline()
 bool FaceTypedBSpline::isEqual(const TopoDS_Face& faceOne, const TopoDS_Face& faceTwo) const
 {
     try {
-        Handle(Geom_BSplineSurface) surfaceOne = Handle(Geom_BSplineSurface)::DownCast(
-            BRep_Tool::Surface(faceOne)
-        );
-        Handle(Geom_BSplineSurface) surfaceTwo = Handle(Geom_BSplineSurface)::DownCast(
-            BRep_Tool::Surface(faceTwo)
-        );
+        Handle(Geom_BSplineSurface)
+            surfaceOne = Handle(Geom_BSplineSurface)::DownCast(BRep_Tool::Surface(faceOne));
+        Handle(Geom_BSplineSurface)
+            surfaceTwo = Handle(Geom_BSplineSurface)::DownCast(BRep_Tool::Surface(faceTwo));
 
         if (surfaceOne.IsNull() || surfaceTwo.IsNull()) {
             return false;
@@ -1055,9 +1062,8 @@ TopoDS_Face FaceTypedBSpline::buildFace(const FaceVectorType& faces) const
     std::sort(wires.begin(), wires.end(), ModelRefine::WireSort());
 
     // make face from surface and outer wire.
-    Handle(Geom_BSplineSurface) surface = Handle(Geom_BSplineSurface)::DownCast(
-        BRep_Tool::Surface(faces.at(0))
-    );
+    Handle(Geom_BSplineSurface)
+        surface = Handle(Geom_BSplineSurface)::DownCast(BRep_Tool::Surface(faces.at(0)));
     if (!surface) {
         return {};
     }

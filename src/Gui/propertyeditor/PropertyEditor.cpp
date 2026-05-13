@@ -1219,7 +1219,7 @@ void PropertyEditor::contextMenuEvent(QContextMenuEvent*)
             const char* oldName = prop->getName();
             QString res = QInputDialog::getText(
                 Gui::getMainWindow(),
-                tr("Rename property"),
+                tr("Rename Property"),
                 tr("Property name"),
                 QLineEdit::Normal,
                 QString::fromUtf8(oldName)
@@ -1248,7 +1248,7 @@ void PropertyEditor::contextMenuEvent(QContextMenuEvent*)
             }
             QString res = QInputDialog::getText(
                 Gui::getMainWindow(),
-                tr("Rename property group"),
+                tr("Rename Property Group"),
                 tr("Group name:"),
                 QLineEdit::Normal,
                 QString::fromUtf8(groupName)
@@ -1298,8 +1298,10 @@ bool PropertyEditor::eventFilter(QObject* object, QEvent* event)
                     }
                 }
             }
-            else if (mouse_event->type() == QEvent::MouseButtonPress
-                     && mouse_event->button() == Qt::LeftButton && !dragInProgress) {
+            else if (
+                mouse_event->type() == QEvent::MouseButtonPress
+                && mouse_event->button() == Qt::LeftButton && !dragInProgress
+            ) {
                 if (indexResizable(mouse_event->pos()).isValid()) {
                     dragInProgress = true;
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
@@ -1311,8 +1313,10 @@ bool PropertyEditor::eventFilter(QObject* object, QEvent* event)
                     return true;
                 }
             }
-            else if (mouse_event->type() == QEvent::MouseButtonRelease
-                     && mouse_event->button() == Qt::LeftButton && dragInProgress) {
+            else if (
+                mouse_event->type() == QEvent::MouseButtonRelease
+                && mouse_event->button() == Qt::LeftButton && dragInProgress
+            ) {
                 dragInProgress = false;
 
                 auto hGrp = App::GetApplication().GetParameterGroupByPath(
