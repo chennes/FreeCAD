@@ -53,6 +53,7 @@ from draftguitools import gui_base_original
 from draftguitools import gui_tool_utils
 from draftguitools import gui_trackers as trackers
 from draftutils import gui_utils
+from draftutils import params
 from draftutils import utils
 from draftutils.messages import _msg, _err, _toolmsg
 from draftutils.translate import translate
@@ -107,20 +108,21 @@ class Trimex(gui_base_original.Modifier):
             self.finish()
             return
         self.obj = sel[0]
-        self.ui.trimUi(title=translate("draft", self.featureName))
-        self.linetrack = trackers.lineTracker()
+        sel = Gui.Selection.getSelectionEx("", 0)[0]
 
         import Part
 
-        if not hasattr(self.obj, "Shape"):
+        reason = utils.get_trimex_unsupported_reason(self.obj, sel.SubObjects)
+        if reason:
             self.obj = None
             self.finish()
-            _err(translate("draft", "This object is not supported"))
+            _err(reason)
             return
+        self.ui.trimUi(title=translate("draft", self.featureName))
+        self.linetrack = trackers.lineTracker()
         if hasattr(self.obj, "Placement"):
             self.placement = self.obj.Placement
         if self.obj.Shape.Faces:
-            sel = Gui.Selection.getSelectionEx("", 0)[0]
             self.obj = sel.Object
             if len(self.obj.Shape.Faces) == 1:
                 # simple extrude mode, the object itself is extruded
@@ -179,6 +181,8 @@ class Trimex(gui_base_original.Modifier):
         self.cv = None
         self.call = self.view.addEventCallback("SoEvent", self.action)
         _toolmsg(translate("draft", "Pick distance"))
+        self.selection_done = True
+        self.update_hints()
 
     def action(self, arg):
         """Handle the 3D scene events.
@@ -590,6 +594,24 @@ class Trimex(gui_base_original.Modifier):
         self.force = dist
         self.trimObject()
         self.finish()
+
+    def get_action_hints(self):
+        # In Trimex the configured "constrain" and "alt" modifier keys don't
+        # do the standard constrain/copy actions, so we describe the actual
+        # Trimex-specific behavior instead of using the shared helpers.
+        constrain_key = gui_tool_utils._HINT_MOD_KEYS[params.get_param("modconstrain")]
+        alt_key = gui_tool_utils._HINT_MOD_KEYS[params.get_param("modalt")]
+        hints = [Gui.InputHint(translate("draft", "%1 pick target"), Gui.UserInput.MouseLeft)]
+        if self.extrudeMode:
+            hints.append(Gui.InputHint(translate("draft", "Hold %1 free direction"), constrain_key))
+        else:
+            hints.append(
+                Gui.InputHint(translate("draft", "Hold %1 keep active endpoint"), constrain_key)
+            )
+            hints.append(
+                Gui.InputHint(translate("draft", "Hold %1 invert trim direction"), alt_key)
+            )
+        return hints + gui_tool_utils._get_hint_mod_snap()
 
 
 Gui.addCommand("Draft_Trimex", Trimex())

@@ -81,6 +81,7 @@
 #include <Base/UnitsApi.h>
 
 #include "SoFCUnifiedSelection.h"
+#include "SelectionColors.h"
 #include "Application.h"
 #include "Document.h"
 #include "DocumentObserver.h"
@@ -189,8 +190,8 @@ SoFCUnifiedSelection::SoFCUnifiedSelection()
 {
     SO_NODE_CONSTRUCTOR(SoFCUnifiedSelection);
 
-    SO_NODE_ADD_FIELD(colorHighlight, (SbColor(1.0f, 0.6f, 0.0f)));
-    SO_NODE_ADD_FIELD(colorSelection, (SbColor(0.1f, 0.8f, 0.1f)));
+    SO_NODE_ADD_FIELD(colorHighlight, (SelectionColors::highlightFallbackColor()));
+    SO_NODE_ADD_FIELD(colorSelection, (SelectionColors::selectionFallbackColor()));
     SO_NODE_ADD_FIELD(preselectionMode, (AUTO));
     SO_NODE_ADD_FIELD(selectionMode, (ON));
     SO_NODE_ADD_FIELD(selectionEnabled, (true));
@@ -249,19 +250,13 @@ bool SoFCUnifiedSelection::hasHighlight()
 
 void SoFCUnifiedSelection::applySettings()
 {
-    float transparency;
     ParameterGrp::handle hGrp = Gui::WindowParameter::getDefaultParameter()->GetGroup("View");
     bool enablePreselection = hGrp->GetBool("EnablePreselection", true);
     if (!enablePreselection) {
         this->preselectionMode = SoFCUnifiedSelection::OFF;
     }
     else {
-        // Search for a user defined value with the current color as default
-        SbColor highlightColor = this->colorHighlight.getValue();
-        auto highlight = (unsigned long)(highlightColor.getPackedValue());
-        highlight = hGrp->GetUnsigned("HighlightColor", highlight);
-        highlightColor.setPackedValue((uint32_t)highlight, transparency);
-        this->colorHighlight.setValue(highlightColor);
+        this->colorHighlight.setValue(SelectionColors::defaultHighlightColor());
     }
 
     bool enableSelection = hGrp->GetBool("EnableSelection", true);
@@ -269,12 +264,7 @@ void SoFCUnifiedSelection::applySettings()
         this->selectionMode = SoFCUnifiedSelection::OFF;
     }
     else {
-        // Do the same with the selection color
-        SbColor selectionColor = this->colorSelection.getValue();
-        auto selection = (unsigned long)(selectionColor.getPackedValue());
-        selection = hGrp->GetUnsigned("SelectionColor", selection);
-        selectionColor.setPackedValue((uint32_t)selection, transparency);
-        this->colorSelection.setValue(selectionColor);
+        this->colorSelection.setValue(SelectionColors::defaultSelectionColor());
     }
 }
 
@@ -769,7 +759,16 @@ bool SoFCUnifiedSelection::setPreselect(
         printPreselectionInfo(docname, objname, element, x, y, z, 1e-7);
 
 
-        int ret = Gui::Selection().setPreselect(docname, objname, element, x, y, z);
+        int ret = Gui::Selection().setPreselect(
+            docname,
+            objname,
+            element,
+            x,
+            y,
+            z,
+            SelectionChanges::MsgSource::Any,
+            SelectionChanges::PickedPoint::Valid
+        );
         if (ret < 0 && currentHighlightPath) {
             return true;
         }
@@ -876,8 +875,17 @@ bool SoFCUnifiedSelection::setSelection(const std::vector<PickedInfo>& infos, bo
             // So, make sure that the object still exists afterwards (#17965)
             ViewProviderWeakPtrT guard(vpd);
             getFullSubElementName(subName);
-            bool ok = Gui::Selection()
-                          .addSelection(docname, objname, subName.c_str(), pt[0], pt[1], pt[2], &sels);
+            bool ok = Gui::Selection().addSelection(
+                docname,
+                objname,
+                subName.c_str(),
+                pt[0],
+                pt[1],
+                pt[2],
+                &sels,
+                true,
+                Gui::SelectionChanges::PickedPoint::Valid
+            );
             if (guard.expired()) {
                 return false;
             }
@@ -983,7 +991,9 @@ bool SoFCUnifiedSelection::setSelection(const std::vector<PickedInfo>& infos, bo
             pt[0],
             pt[1],
             pt[2],
-            &sels
+            &sels,
+            true,
+            Gui::SelectionChanges::PickedPoint::Valid
         );
         if (ok) {
             type = hasNext ? SoSelectionElementAction::All : SoSelectionElementAction::Append;
@@ -1660,7 +1670,7 @@ bool SoFCSelectionRoot::_renderPrivate(SoGLRenderAction* action, bool inPath)
             style = SoFCSelectionRoot::Box;
         }
         else {
-            renderBBox(action, this, ctx->hlAll ? ctx->hlColor : ctx->selColor);
+            renderBBox(action, this, (ctx->hlAll && !ctx->selAll) ? ctx->hlColor : ctx->selColor);
             return true;
         }
     }
@@ -2184,7 +2194,7 @@ void SoFCPathAnnotation::GLRenderBelowPath(SoGLRenderAction* action)
                 SbColor selColor, hlColor;
                 SoFCSelectionRoot::checkSelection(sel, selColor, hl, hlColor);
                 if (sel || hl) {
-                    SoFCSelectionRoot::renderBBox(action, this, hl ? hlColor : selColor);
+                    SoFCSelectionRoot::renderBBox(action, this, (hl && !sel) ? hlColor : selColor);
                 }
                 else {
                     inherited::GLRenderInPath(action);

@@ -79,7 +79,7 @@ TYPE_CONTEXT_RULES = (
     TypeContextRule(
         source="src/Base/ParameterPy.cpp",
         context_name="ParameterGrp",
-        public_targets=(PublicTypeTarget("FreeCAD", "_ParameterGrp"),),
+        public_targets=(PublicTypeTarget("FreeCAD", "ParameterGrp"),),
     ),
     TypeContextRule(
         source="src/Gui/MainWindowPy.cpp",
@@ -120,16 +120,6 @@ TYPE_CONTEXT_RULES = (
         source="src/Gui/WidgetFactory.cpp",
         context_name="PyResource",
         public_targets=(PublicTypeTarget("FreeCADGui", "_PyResource"),),
-    ),
-    TypeContextRule(
-        source="src/Mod/Sandbox/App/DocumentProtectorPy.cpp",
-        context_name="DocumentProtectorPy",
-        public_targets=(PublicTypeTarget("Sandbox", "_DocumentProtector"),),
-    ),
-    TypeContextRule(
-        source="src/Mod/Sandbox/App/DocumentProtectorPy.cpp",
-        context_name="DocumentObjectProtectorPy",
-        public_targets=(PublicTypeTarget("Sandbox", "_DocumentObjectProtector"),),
     ),
     TypeContextRule(
         source="src/Mod/Spreadsheet/Gui/SpreadsheetView.cpp",
