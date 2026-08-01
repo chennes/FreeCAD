@@ -36,6 +36,7 @@
 #include "Dialogs/DlgProjectInformationImp.h"
 #include "ui_DlgProjectInformation.h"
 
+#include "LicenseSelector.h"
 #include "MainWindow.h"
 
 #if 0  // needed for Qt's lupdate utility
@@ -101,23 +102,19 @@ DlgProjectInformationImp::DlgProjectInformationImp(App::Document* doc, QWidget* 
 
     ui->comboBox_unitSystem->setCurrentIndex(doc->UnitSystem.getValue());
 
-    // load comboBox with license names
-    for (const auto& item : App::licenseItems) {
-        const char* name {item.fullName};
-        QString translated = QApplication::translate("Gui::Dialog::DlgSettingsDocument", name);
-        ui->comboLicense->addItem(translated, QByteArray(name));
-    }
+    // The document records the full name of its license, but the combo box works in
+    // identifiers, so translate one into the other
+    const QByteArray licenseName {doc->License.getValue()};
+    const int recorded {App::findLicenseByName(licenseName.constData())};
+    const QByteArray identifier {
+        recorded >= 0 ? QByteArray(App::licenseItems.at(recorded).identifier) : QByteArray()
+    };
 
-    // set default position to match document
-    int index = ui->comboLicense->findData(QByteArray(doc->License.getValue()));
-    if (index >= 0) {
-        ui->comboLicense->setCurrentIndex(index);
-    }
-    else {
-        index = ui->comboLicense->count();
-        QString text = QString::fromUtf8(doc->License.getValue());
-        ui->comboLicense->addItem(text);
-        ui->comboLicense->setCurrentIndex(index);
+    Gui::populateLicenseComboBox(ui->comboLicense, identifier);
+
+    if (identifier.isEmpty() && !licenseName.isEmpty()) {
+        // A license written by another version of FreeCAD, or by hand
+        Gui::addUnknownLicenseToComboBox(ui->comboLicense, QString::fromUtf8(licenseName));
     }
 
     ui->lineEditLicenseURL->setText(QString::fromUtf8(doc->LicenseURL.getValue()));
@@ -157,12 +154,17 @@ void DlgProjectInformationImp::accept()
     _doc->LastModifiedBy.setValue(ui->lineEditCreator->text().toUtf8());
     _doc->Company.setValue(ui->lineEditCompany->text().toUtf8());
     getMainWindow()->setUserSchema(ui->comboBox_unitSystem->currentIndex());
-    QByteArray licenseName {ui->comboLicense->currentData().toByteArray()};
-    // Is this really necessary?
-    if (licenseName.isEmpty()) {
-        licenseName = ui->comboLicense->currentText().toUtf8();
+    const QByteArray identifier {ui->comboLicense->currentData().toByteArray()};
+    const int license {App::findLicense(identifier.constData())};
+    if (license >= 0) {
+        _doc->License.setValue(App::licenseItems.at(license).fullName);
+        _doc->LicenseSpdxId.setValue(App::licenseItems.at(license).spdxIdentifier);
     }
-    _doc->License.setValue(licenseName);
+    else {
+        // A license FreeCAD does not list, so its name is all that is known about it
+        _doc->License.setValue(ui->comboLicense->currentText().toUtf8());
+        _doc->LicenseSpdxId.setValue("");
+    }
     _doc->LicenseURL.setValue(ui->lineEditLicenseURL->text().toUtf8());
 
     // Replace newline escape sequence through '\\n' string
@@ -177,12 +179,15 @@ void DlgProjectInformationImp::accept()
 
 void DlgProjectInformationImp::onLicenseTypeChanged(int index)
 {
-    const char* url {
-        index >= 0 && index < App::countOfLicenses ? App::licenseItems.at(index).url
-                                                   : _doc->LicenseURL.getValue()
-    };
+    // Headings and separators mean the combo box index is not a licenseItems index
+    Q_UNUSED(index)
+    const QByteArray identifier {ui->comboLicense->currentData().toByteArray()};
+    const int license {App::findLicense(identifier.constData())};
 
-    ui->lineEditLicenseURL->setText(QString::fromLatin1(url));
+    const char* url {license >= 0 ? App::licenseItems.at(license).url
+                                  : _doc->LicenseURL.getValue()};
+
+    ui->lineEditLicenseURL->setText(QString::fromUtf8(url));
 }
 
 /**

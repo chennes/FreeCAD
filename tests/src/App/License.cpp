@@ -68,6 +68,62 @@ TEST(License, everySpdxIdentifierIsRecognized)
     }
 }
 
+TEST(License, spdxIdentifierDerivedFromLicenseName)
+{
+    EXPECT_STREQ(App::spdxIdentifierForLicenseName("Creative Commons Attribution 4.0"), "CC-BY-4.0");
+    EXPECT_STREQ(App::spdxIdentifierForLicenseName("Public Domain"), "CC0-1.0");
+
+    // Licenses that SPDX does not define resolve to nothing rather than to a wrong answer
+    EXPECT_STREQ(App::spdxIdentifierForLicenseName("All rights reserved"), "");
+
+    // As do names FreeCAD does not know
+    EXPECT_STREQ(App::spdxIdentifierForLicenseName("not a license"), "");
+    EXPECT_STREQ(App::spdxIdentifierForLicenseName(""), "");
+    EXPECT_STREQ(App::spdxIdentifierForLicenseName(nullptr), "");
+}
+
+TEST(License, recognizesNamesWrittenByOlderVersions)
+{
+    // Versionless spellings meant 4.0, which is what they were introduced alongside
+    EXPECT_STREQ(App::spdxIdentifierForLicenseName("CreativeCommons Attribution"), "CC-BY-4.0");
+    EXPECT_STREQ(
+        App::spdxIdentifierForLicenseName("CreativeCommons Attribution-ShareAlike"),
+        "CC-BY-SA-4.0"
+    );
+    EXPECT_STREQ(App::spdxIdentifierForLicenseName("Creative Commons Attribution"), "CC-BY-4.0");
+
+    // Spellings people have typed by hand
+    EXPECT_STREQ(App::spdxIdentifierForLicenseName("CC BY 3.0"), "CC-BY-3.0");
+    EXPECT_STREQ(App::spdxIdentifierForLicenseName("CC-BY 3.0"), "CC-BY-3.0");
+    EXPECT_STREQ(
+        App::spdxIdentifierForLicenseName("Attribution 4.0 International (CC BY 4.0)"),
+        "CC-BY-4.0"
+    );
+    EXPECT_STREQ(App::spdxIdentifierForLicenseName("CC0"), "CC0-1.0");
+
+    // Names that say nothing definite about a license are deliberately not mapped
+    EXPECT_STREQ(App::spdxIdentifierForLicenseName("(same license as FreeCAD)"), "");
+}
+
+TEST(License, everyAliasNamesAKnownLicense)
+{
+    for (const auto& alias : App::licenseAliases) {
+        EXPECT_GE(App::findLicense(alias.identifier), 0)
+            << "alias " << alias.recordedName << " points at " << alias.identifier
+            << ", which is not a license FreeCAD lists";
+    }
+}
+
+TEST(License, aliasesDoNotShadowCurrentNames)
+{
+    for (const auto& alias : App::licenseAliases) {
+        for (const auto& license : App::licenseItems) {
+            EXPECT_STRNE(alias.recordedName, license.fullName)
+                << alias.recordedName << " is both a current license name and an alias";
+        }
+    }
+}
+
 TEST(License, spdxListIsQueryable)
 {
     const auto& spdx = App::SpdxLicenseList::instance();

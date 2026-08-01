@@ -104,6 +104,81 @@ int constexpr findLicense(const char* identifier)
     return -1;
 }
 
+/// A name found in Document::License that is not the current full name of any license
+struct LicenseAlias
+{
+    const char* recordedName;
+    /// Identifier of the license in licenseItems that recordedName stands for
+    const char* identifier;
+};
+
+/**
+ * Names other than the current ones that documents carry in Document::License, mapped to the
+ * license each one stands for.
+ *
+ * Versionless spellings come from the license list as it was first written in FreeCAD, in commit
+ * 645d176a1, where they were paired with CC 4.0 license URLs -- the versioned names came later.
+ * The rest are spellings people have typed by hand. Each entry in the list corresponds
+ * to an "in the wild" spelling found in the FreeCAD Parts Library, and helps to map those known
+ * spellings back to the correct SPDX identifier so that if those files are opened and resaved,
+ * the correct SPDX ID is added.
+ */
+// clang-format off
+constexpr std::array licenseAliases {
+    LicenseAlias {"CreativeCommons Attribution",                                "CC_BY_40"       },
+    LicenseAlias {"CreativeCommons Attribution-ShareAlike",                     "CC_BY_SA_40"    },
+    LicenseAlias {"CreativeCommons Attribution-NoDerivatives",                  "CC_BY_ND_40"    },
+    LicenseAlias {"CreativeCommons Attribution-NonCommercial",                  "CC_BY_NC_40"    },
+    LicenseAlias {"CreativeCommons Attribution-NonCommercial-ShareAlike",       "CC_BY_NC_SA_40" },
+    LicenseAlias {"CreativeCommons Attribution-NonCommercial-NoDerivatives",    "CC_BY_NC_ND_40" },
+    LicenseAlias {"Creative Commons Attribution",                               "CC_BY_40"       },
+    LicenseAlias {"Creative Commons Attribution-ShareAlike",                    "CC_BY_SA_40"    },
+    LicenseAlias {"Creative Commons Attribution-NoDerivatives",                 "CC_BY_ND_40"    },
+    LicenseAlias {"Creative Commons Attribution-NonCommercial",                 "CC_BY_NC_40"    },
+    LicenseAlias {"Creative Commons Attribution-NonCommercial-ShareAlike",      "CC_BY_NC_SA_40" },
+    LicenseAlias {"Creative Commons Attribution-NonCommercial-NoDerivatives",   "CC_BY_NC_ND_40" },
+    LicenseAlias {"Attribution 4.0 International (CC BY 4.0)",                  "CC_BY_40"       },
+    LicenseAlias {"CC BY 4.0",                                                  "CC_BY_40"       },
+    LicenseAlias {"CC-BY 4.0",                                                  "CC_BY_40"       },
+    LicenseAlias {"CC BY 3.0",                                                  "CC_BY_30"       },
+    LicenseAlias {"CC-BY 3.0",                                                  "CC_BY_30"       },
+    LicenseAlias {"CC0",                                                        "PublicDomain"   },
+};
+// clang-format on
+
+/**
+ * Position in licenseItems of the license recorded under this name, or -1 when nothing
+ * matches. Recognises the names older versions of FreeCAD wrote as well as the current ones.
+ */
+inline int findLicenseByName(const char* fullName)
+{
+    if (Base::Tools::isNullOrEmpty(fullName)) {
+        return -1;
+    }
+    for (int i = 0; i < countOfLicenses; i++) {
+        if (strcmp(licenseItems.at(i).fullName, fullName) == 0) {
+            return i;
+        }
+    }
+    for (const auto& alias : licenseAliases) {
+        if (strcmp(alias.recordedName, fullName) == 0) {
+            return findLicense(alias.identifier);
+        }
+    }
+    return -1;
+}
+
+/**
+ * SPDX identifier of the license going by this name, empty when no license matches or when
+ * the one that does has no SPDX identifier. Used to work out what a document that predates
+ * Document::LicenseSpdxId is licensed under.
+ */
+inline const char* spdxIdentifierForLicenseName(const char* fullName)
+{
+    const int index = findLicenseByName(fullName);
+    return index >= 0 ? licenseItems.at(index).spdxIdentifier : "";
+}
+
 /// Identifier stored when the user chose a license that is not one of the known ones
 constexpr const char* otherLicenseIdentifier = "Other";
 

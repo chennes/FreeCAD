@@ -176,6 +176,12 @@ public:
     PropertyUUID Uid;
     /// The full name of the licence e.g. "Creative Commons Attribution". See https://spdx.org/licenses/.
     PropertyString License;
+    /**
+     * The SPDX identifier of the license, e.g. "CC-BY-4.0". Empty for documents written
+     * before this property existed, and for licenses SPDX does not define, so readers must
+     * fall back to License when it is empty rather than treating it as "no license".
+     */
+    PropertyString LicenseSpdxId;
     /// The URL to the license description or contract.
     PropertyString LicenseURL;
     /// Meta descriptions.

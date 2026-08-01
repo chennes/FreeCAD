@@ -1163,6 +1163,7 @@ SOURCE_GROUP("View3D\\Inventor" FILES ${Inventor_SRCS})
 SET(Widget_CPP_SRCS
     ComboLinks.cpp
     FileDialog.cpp
+    LicenseSelector.cpp
     MainWindow.cpp
     MainWindowPy.cpp
     NotificationBox.cpp
@@ -1195,6 +1196,7 @@ SET(Widget_HPP_SRCS
     ComboLinks.h
     FileDialog.h
     FileDialogInternal.h
+    LicenseSelector.h
     MainWindow.h
     MainWindowPy.h
     NotificationBox.h

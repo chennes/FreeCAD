@@ -24,6 +24,7 @@
 
 #include <zlib.h>
 #include <App/License.h>
+#include <Gui/LicenseSelector.h>
 #include <Gui/AutoSaver.h>
 
 #include "DlgSettingsDocumentImp.h"
@@ -184,7 +185,6 @@ void DlgSettingsDocumentImp::loadSettings()
     ui->prefDisableVersionCheckOnSave->onRestore();
     ui->prefDuplicateLabel->onRestore();
     ui->prefPartialLoading->onRestore();
-    App::migrateLicensePreference();
     ui->prefLicenseType->onRestore();
     ui->prefLicenseUrl->onRestore();
     ui->prefAuthor->onRestore();
@@ -204,9 +204,10 @@ void DlgSettingsDocumentImp::changeEvent(QEvent* e)
 {
     if (e->type() == QEvent::LanguageChange) {
         ui->retranslateUi(this);
-        int index = ui->prefLicenseType->currentIndex();
-        addLicenseTypes();
-        ui->prefLicenseType->setCurrentIndex(index);
+        // Repopulating picks up the new language, so keep hold of what is selected rather
+        // than of where it sits: the entries move as the groups are rebuilt
+        const QByteArray selected {ui->prefLicenseType->currentData().toByteArray()};
+        Gui::populateLicenseComboBox(ui->prefLicenseType, selected, true);
     }
     else {
         QWidget::changeEvent(e);
@@ -215,20 +216,12 @@ void DlgSettingsDocumentImp::changeEvent(QEvent* e)
 
 void DlgSettingsDocumentImp::addLicenseTypes()
 {
-    // The identifier is carried as item data because that, rather than the position in
-    // the combo box, is what the preference stores
-    auto add = [&](const char* what, const char* identifier) {
-        ui->prefLicenseType->addItem(
-            QApplication::translate("Gui::Dialog::DlgSettingsDocument", what),
-            QByteArray(identifier)
-        );
+    App::migrateLicensePreference();
+    const int index = App::getDefaultLicenseIndex();
+    const QByteArray selected {
+        index >= 0 ? App::licenseItems.at(index).identifier : App::otherLicenseIdentifier
     };
-
-    ui->prefLicenseType->clear();
-    for (const auto& licenseItem : App::licenseItems) {
-        add(licenseItem.fullName, licenseItem.identifier);
-    }
-    add("Other", App::otherLicenseIdentifier);
+    Gui::populateLicenseComboBox(ui->prefLicenseType, selected, true);
 }
 
 /**
@@ -236,10 +229,13 @@ void DlgSettingsDocumentImp::addLicenseTypes()
  */
 void DlgSettingsDocumentImp::onLicenseTypeChanged(int index)
 {
-    if (index >= 0 && index < App::countOfLicenses) {
-        // existing license
-        const char* url {App::licenseItems.at(index).url};
-        ui->prefLicenseUrl->setText(QString::fromLatin1(url));
+    // Headings and separators mean the combo box index is not a licenseItems index
+    Q_UNUSED(index)
+    const QByteArray identifier {ui->prefLicenseType->currentData().toByteArray()};
+    const int license {App::findLicense(identifier.constData())};
+
+    if (license >= 0) {
+        ui->prefLicenseUrl->setText(QString::fromUtf8(App::licenseItems.at(license).url));
         ui->prefLicenseUrl->setReadOnly(true);
     }
     else {

@@ -992,13 +992,20 @@ Document::Document(const char* documentName)
         "User parameter:BaseApp/Preferences/Document")};
     auto index = getDefaultLicenseIndex();
     auto name = "";
+    auto spdxIdentifier = "";
     std::string licenseUrl = "";
     if (index >= 0) {
         name = licenseItems.at(index).fullName;
+        spdxIdentifier = licenseItems.at(index).spdxIdentifier;
         auto url = licenseItems.at(index).url;
         licenseUrl = (paramGrp->GetASCII("prefLicenseUrl", url));
     }
     ADD_PROPERTY_TYPE(License, (name), 0, Prop_None, "License string of the Item");
+    ADD_PROPERTY_TYPE(LicenseSpdxId,
+                      (spdxIdentifier),
+                      0,
+                      Prop_None,
+                      "SPDX identifier of the license, empty if it has none");
     ADD_PROPERTY_TYPE(LicenseURL,
                       (licenseUrl.c_str()),
                       0,
@@ -1171,6 +1178,11 @@ void Document::Restore(Base::XMLReader& reader)
     const std::string FilePath = FileName.getValue();
     const std::string DocLabel = Label.getValue();
 
+    // Documents written before LicenseSpdxId existed carry no such property, and restoring
+    // leaves absent properties alone. Clearing it first stops the default this document was
+    // constructed with from being mistaken for something the file actually said.
+    LicenseSpdxId.setValue("");
+
     // read the Document Properties, when reading in Uid the transient directory gets renamed
     // automatically
     PropertyContainer::Restore(reader);
@@ -1179,6 +1191,12 @@ void Document::Restore(Base::XMLReader& reader)
     // value could be invalid.
     FileName.setValue(FilePath.c_str());
     Label.setValue(DocLabel.c_str());
+
+    // Work out the SPDX identifier for a document that predates the property, so that
+    // readers get the same answer whichever version of FreeCAD wrote the file
+    if (Base::Tools::isNullOrEmpty(LicenseSpdxId.getValue())) {
+        LicenseSpdxId.setValue(spdxIdentifierForLicenseName(License.getValue()));
+    }
 
     // SchemeVersion "2"
     if (scheme == 2) {
