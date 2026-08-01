@@ -42,7 +42,7 @@ TEST(License, findLicenseByIdent)
 {
     App::TLicenseArr arr {App::licenseItems.at(App::findLicense("CC_BY_40"))};
 
-    EXPECT_STREQ(arr.at(App::posnOfIdentifier), "CC_BY_40");
+    EXPECT_STREQ(arr.at(App::positionOfIdentifier), "CC_BY_40");
     EXPECT_STREQ(arr.at(App::posnOfFullName), "Creative Commons Attribution 4.0");
     EXPECT_STREQ(arr.at(App::posnOfUrl), "https://creativecommons.org/licenses/by/4.0/");
 }

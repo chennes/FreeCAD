@@ -990,10 +990,10 @@ Document::Document(const char* documentName)
     // license stuff
     auto paramGrp {GetApplication().GetParameterGroupByPath(
         "User parameter:BaseApp/Preferences/Document")};
-    auto index = static_cast<int>(paramGrp->GetInt("prefLicenseType", 0));
+    auto index = getDefaultLicenseIndex();
     auto name = "";
     std::string licenseUrl = "";
-    if (index >= 0 && index < countOfLicenses) {
+    if (index >= 0) {
         name = licenseItems.at(index).at(posnOfFullName);
         auto url = licenseItems.at(index).at(posnOfUrl);
         licenseUrl = (paramGrp->GetASCII("prefLicenseUrl", url));

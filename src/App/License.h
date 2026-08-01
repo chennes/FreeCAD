@@ -28,6 +28,7 @@
 #include <cstring>
 #include <string>
 #include <Base/Tools.h>
+#include <FCGlobal.h>
 
 namespace App
 {
@@ -38,7 +39,7 @@ namespace App
  */
 constexpr int colsInArray = 3;
 using TLicenseArr = std::array<const char*, colsInArray>;
-constexpr int posnOfIdentifier = 0;
+constexpr int positionOfIdentifier = 0;
 constexpr int posnOfFullName = 1;
 constexpr int posnOfUrl = 2;
 constexpr int countOfLicenses {19};
@@ -72,10 +73,28 @@ int constexpr findLicense(const char* identifier)
         return -1;
     }
     for (int i = 0; i < countOfLicenses; i++) {
-        if (strcmp(licenseItems.at(i).at(posnOfIdentifier), identifier) == 0) {
+        if (strcmp(licenseItems.at(i).at(positionOfIdentifier), identifier) == 0) {
             return i;
         }
     }
     return -1;
 }
+
+/// Identifier stored when the user chose a license that is not one of the known ones
+constexpr const char* otherLicenseIdentifier = "Other";
+
+/**
+ * Rewrites the legacy license preference, which stored a position in licenseItems, as
+ * the identifier of the license it referred to. Does nothing once that has happened, and
+ * nothing if the legacy preference was never set. Reordering licenseItems is only safe
+ * once every installation has been through this.
+ */
+AppExport void migrateLicensePreference();
+
+/**
+ * Position in licenseItems of the license configured as the default for new documents.
+ * Returns -1 when the configured license is not one of the known ones, which callers
+ * should treat as leaving the license unset.
+ */
+AppExport int getDefaultLicenseIndex();
 }  // namespace App

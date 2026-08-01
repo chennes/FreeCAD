@@ -488,13 +488,12 @@ void MaterialsEditor::setMaterialDefaults()
     _material->setAuthor(QString::fromStdString(Author));
 
     // license stuff
-    auto paramGrp {App::GetApplication().GetParameterGroupByPath(
-        "User parameter:BaseApp/Preferences/Document")};
-    auto index = static_cast<int>(paramGrp->GetInt("prefLicenseType", 0));
-    const char* name = App::licenseItems.at(index).at(App::posnOfFullName);
-    // const char* url = App::licenseItems.at(index).at(App::posnOfUrl);
-    // std::string licenseUrl = (paramGrp->GetASCII("prefLicenseUrl", url));
-    _material->setLicense(QLatin1String(name));
+    const int index = App::getDefaultLicenseIndex();
+    if (index >= 0) {
+        _material->setLicense(
+            QString::fromUtf8(App::licenseItems.at(index).at(App::posnOfFullName))
+        );
+    }
 
     // Empty materials will have no parent
     Materials::MaterialManager::getManager().dereference(_material);

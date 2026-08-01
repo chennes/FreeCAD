@@ -210,6 +210,7 @@ SET(Document_CPP_SRCS
     Link.cpp
     LinkBaseExtensionPyImp.cpp
     VarSet.cpp
+    License.cpp
     License.h
 )
 

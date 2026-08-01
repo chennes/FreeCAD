@@ -184,6 +184,7 @@ void DlgSettingsDocumentImp::loadSettings()
     ui->prefDisableVersionCheckOnSave->onRestore();
     ui->prefDuplicateLabel->onRestore();
     ui->prefPartialLoading->onRestore();
+    App::migrateLicensePreference();
     ui->prefLicenseType->onRestore();
     ui->prefLicenseUrl->onRestore();
     ui->prefAuthor->onRestore();
@@ -214,15 +215,20 @@ void DlgSettingsDocumentImp::changeEvent(QEvent* e)
 
 void DlgSettingsDocumentImp::addLicenseTypes()
 {
-    auto add = [&](const char* what) {
-        ui->prefLicenseType->addItem(QApplication::translate("Gui::Dialog::DlgSettingsDocument", what));
+    // The identifier is carried as item data because that, rather than the position in
+    // the combo box, is what the preference stores
+    auto add = [&](const char* what, const char* identifier) {
+        ui->prefLicenseType->addItem(
+            QApplication::translate("Gui::Dialog::DlgSettingsDocument", what),
+            QByteArray(identifier)
+        );
     };
 
     ui->prefLicenseType->clear();
     for (const auto& licenseItem : App::licenseItems) {
-        add(licenseItem.at(App::posnOfFullName));
+        add(licenseItem.at(App::posnOfFullName), licenseItem.at(App::positionOfIdentifier));
     }
-    add("Other");
+    add("Other", App::otherLicenseIdentifier);
 }
 
 /**

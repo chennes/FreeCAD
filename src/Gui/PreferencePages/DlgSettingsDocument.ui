@@ -715,10 +715,13 @@ You can also use the form: John Doe &lt;john@doe.com&gt;</string>
          <bool>false</bool>
         </property>
         <property name="prefEntry" stdset="0">
-         <cstring>prefLicenseType</cstring>
+         <cstring>prefLicenseId</cstring>
         </property>
         <property name="prefPath" stdset="0">
          <cstring>Document</cstring>
+        </property>
+        <property name="prefType" stdset="0">
+         <cstring></cstring>
         </property>
        </widget>
       </item>
