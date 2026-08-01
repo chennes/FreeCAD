@@ -374,6 +374,7 @@ qt_find_and_add_translation(QM_SRCS "${CMAKE_SOURCE_DIR}/src/Base/Resources/tran
 qt_create_resource_file(${FreeCADApp_TR_QRC} ${QM_SRCS})
 qt_add_resources(FreeCADApp_QRC_SRCS
     ${FreeCADApp_TR_QRC}
+    Resources/Licenses.qrc
     OPTIONS ${FREECAD_RCC_OPTIONS}
 )
 

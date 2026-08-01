@@ -21,6 +21,16 @@
 
 #include "PreCompiled.h"
 
+#ifndef _PreComp_
+#include <QByteArray>
+#include <QFile>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+#endif
+
+#include <Base/Console.h>
+
 #include "Application.h"
 #include "License.h"
 
@@ -56,7 +66,7 @@ void App::migrateLicensePreference()
     }
 
     const char* identifier = legacyIndex < countOfLicenses
-        ? licenseItems.at(legacyIndex).at(positionOfIdentifier)
+        ? licenseItems.at(legacyIndex).identifier
         : otherLicenseIdentifier;
     paramGrp->SetASCII(licenseIdentifierEntry, identifier);
 }
@@ -71,4 +81,55 @@ int App::getDefaultLicenseIndex()
     }
 
     return findLicense(identifier.c_str());
+}
+
+SpdxLicenseList::SpdxLicenseList()
+{
+    QFile resource(QStringLiteral(":/licenses/licenses/spdx.json"));
+    if (!resource.open(QIODevice::ReadOnly)) {
+        Base::Console().warning("The SPDX license list is missing from the resources\n");
+        return;
+    }
+
+    QJsonParseError parseError {};
+    const QJsonDocument document = QJsonDocument::fromJson(resource.readAll(), &parseError);
+    if (document.isNull()) {
+        Base::Console().warning(
+            "The SPDX license list could not be read: %s\n",
+            parseError.errorString().toUtf8().constData()
+        );
+        return;
+    }
+
+    const QJsonObject root = document.object();
+    _version = root.value(QStringLiteral("licenseListVersion")).toString().toStdString();
+
+    const QJsonArray licenses = root.value(QStringLiteral("licenses")).toArray();
+    _entries.reserve(licenses.size());
+    for (const auto& value : licenses) {
+        const QJsonObject license = value.toObject();
+        Entry entry;
+        entry.identifier = license.value(QStringLiteral("licenseId")).toString().toStdString();
+        if (entry.identifier.empty()) {
+            continue;
+        }
+        entry.name = license.value(QStringLiteral("name")).toString().toStdString();
+        entry.deprecated = license.value(QStringLiteral("isDeprecatedLicenseId")).toBool();
+        entry.osiApproved = license.value(QStringLiteral("isOsiApproved")).toBool();
+
+        _byIdentifier.emplace(entry.identifier, _entries.size());
+        _entries.push_back(std::move(entry));
+    }
+}
+
+const SpdxLicenseList& SpdxLicenseList::instance()
+{
+    static const SpdxLicenseList list;
+    return list;
+}
+
+const SpdxLicenseList::Entry* SpdxLicenseList::find(const std::string& identifier) const
+{
+    const auto found = _byIdentifier.find(identifier);
+    return found == _byIdentifier.end() ? nullptr : &_entries.at(found->second);
 }

@@ -491,7 +491,7 @@ void MaterialsEditor::setMaterialDefaults()
     const int index = App::getDefaultLicenseIndex();
     if (index >= 0) {
         _material->setLicense(
-            QString::fromUtf8(App::licenseItems.at(index).at(App::posnOfFullName))
+            QString::fromUtf8(App::licenseItems.at(index).fullName)
         );
     }
 

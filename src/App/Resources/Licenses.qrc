@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/licenses">
+        <file>licenses/spdx.json</file>
+    </qresource>
+</RCC>

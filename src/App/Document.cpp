@@ -994,8 +994,8 @@ Document::Document(const char* documentName)
     auto name = "";
     std::string licenseUrl = "";
     if (index >= 0) {
-        name = licenseItems.at(index).at(posnOfFullName);
-        auto url = licenseItems.at(index).at(posnOfUrl);
+        name = licenseItems.at(index).fullName;
+        auto url = licenseItems.at(index).url;
         licenseUrl = (paramGrp->GetASCII("prefLicenseUrl", url));
     }
     ADD_PROPERTY_TYPE(License, (name), 0, Prop_None, "License string of the Item");
