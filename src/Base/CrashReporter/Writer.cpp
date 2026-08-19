@@ -241,9 +241,14 @@ void Writer::handleException(_EXCEPTION_POINTERS* exceptionInfo)
     if (writing.test_and_set()) {
         return;
     }
-    header.code = exceptionInfo->ExceptionRecord->ExceptionCode;
-    // NOLINTNEXTLINE
-    header.faultAddress = reinterpret_cast<uint64_t>(exceptionInfo->ExceptionRecord->ExceptionAddress);
+    const auto* record = exceptionInfo->ExceptionRecord;
+    header.code = record->ExceptionCode;
+    // The faulting data address is only defined for these two codes; the faulting instruction is
+    // frame 0 of the captured stack.
+    if (record->ExceptionCode == EXCEPTION_ACCESS_VIOLATION ||
+        record->ExceptionCode == EXCEPTION_IN_PAGE_ERROR) {
+        header.faultAddress = record->ExceptionInformation[1];
+    }
     header.threadID = GetCurrentThreadId();
     header.timestamp = std::time(nullptr);
 
