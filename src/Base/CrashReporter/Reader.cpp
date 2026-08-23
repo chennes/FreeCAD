@@ -106,6 +106,23 @@ std::string stripSourceRoot(const std::string& path)
 
     return Base::FileInfo(normalized).fileName();
 }
+
+/**
+ * Trim the "+ offset" that a symbol-table lookup appends to a function name.
+ */
+std::string stripSymbolOffset(const std::string& symbol)
+{
+    const auto plus = symbol.rfind(" + ");
+    if (plus == std::string::npos || plus == 0) {
+        return symbol;
+    }
+    const auto offsetDigits = std::string_view {symbol}.substr(plus + 3);
+    if (offsetDigits.empty()
+        || offsetDigits.find_first_not_of("0123456789") != std::string_view::npos) {
+        return symbol;
+    }
+    return symbol.substr(0, plus);
+}
 #endif
 }  // namespace
 
@@ -230,16 +247,22 @@ ParsedCrashReport Base::CrashReporter::parse(const std::string& pathToRawReportF
             parsedFrame.rawAddress = frame.raw_address;
             parsedFrame.moduleOffset = frame.object_address;
 
+            const std::string& objectPath = modulePathMap[frame.raw_address];
+
             // To avoid any PII in the backtrace, only include the filename, not the full path:
-            parsedFrame.modulePath = FileInfo(modulePathMap[frame.raw_address]).fileName();
+            parsedFrame.modulePath = FileInfo(objectPath).fileName();
 
-            parsedFrame.symbol = frame.symbol.empty() ? std::optional<std::string> {}
-                                                      : std::optional<std::string> {frame.symbol};
+            parsedFrame.symbol =
+                frame.symbol.empty()
+                ? std::optional<std::string> {}
+                : std::optional<std::string> {stripSymbolOffset(frame.symbol)};
 
-            // Make sure to also strip the filename of any PII
-            parsedFrame.file = frame.filename.empty() ? std::nullopt
-                                                      : std::optional<std::string> {
-                                                          stripSourceRoot(frame.filename)};
+            // `file` means a source file, if we've got it
+            const bool haveRealSourceFile =
+                !frame.filename.empty() && frame.filename != objectPath;
+            parsedFrame.file = haveRealSourceFile
+                ? std::optional<std::string> {stripSourceRoot(frame.filename)}
+                : std::nullopt;
             parsedFrame.line = frame.line.has_value() ? std::optional(frame.line.value())
                                                       : std::nullopt;
             parsedFrame.isInline = frame.is_inline;

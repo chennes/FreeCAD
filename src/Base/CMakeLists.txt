@@ -119,6 +119,8 @@ generate_from_py(Axis)
 generate_from_py(Unit)
 generate_from_py(Quantity)
 generate_from_py(Precision)
+generate_from_py(CrashReporter/CrashFrame)
+generate_from_py(CrashReporter/CrashReport)
 generate_module_from_py(
     FreeCAD.Qt
     Qt_MODULE_GENERATED_SRCS
@@ -162,6 +164,8 @@ SET(FreeCADBase_Pyi_SRCS
     Type.pyi
     Unit.pyi
     Precision.pyi
+    CrashReporter/CrashFrame.pyi
+    CrashReporter/CrashReport.pyi
     FreeCAD.Qt.module.pyi
     FreeCAD.Console.module.pyi
     FreeCAD.Units.module.pyi
@@ -336,6 +340,10 @@ SET(FreeCADBase_HPP_SRCS
 )
 
 SET (FreeCADBase_CrashReporter_SRCS
+    CrashReporter/CrashFramePyImp.cpp
+    CrashReporter/CrashReportPyImp.cpp
+    CrashReporter/DebugIdentifier.h
+    CrashReporter/DebugIdentifier.cpp
     CrashReporter/FaultCodes.h
     CrashReporter/FaultCodes.cpp
     CrashReporter/Format.h

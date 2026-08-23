@@ -27,6 +27,10 @@
 # include <Base/CrashReporter/WindowsCrashReporter.h>
 #else
 # include <csignal>
+# include <pthread.h>
+# include <sys/resource.h>
+# include <sys/wait.h>
+# include <unistd.h>
 #endif
 
 
@@ -531,6 +535,11 @@ static void installAndCrash(const std::string& crashDir)
 {
 #ifdef _MSC_VER
     SetErrorMode(SEM_NOGPFAULTERRORBOX | SEM_FAILCRITICALERRORS);
+#else
+    // These tests crash on purpose, several times per run on three platforms. Without this the
+    // build directory (and /cores on macOS) collects dumps nobody asked for.
+    const rlimit noCoreDumps {0, 0};
+    setrlimit(RLIMIT_CORE, &noCoreDumps);
 #endif
     Base::CrashReporter::Writer::prewarm();
     Base::CrashReporter::Writer::install(crashDir);
@@ -539,6 +548,152 @@ static void installAndCrash(const std::string& crashDir)
 #endif
     crashReporterFaultSite();
 }
+
+// Windows needs --gtest_catch_exceptions=0, because gtest's own SEH handler would otherwise eat
+// the fault before SetUnhandledExceptionFilter sees it. That flag cannot be assumed in CI, so the
+// assertion test runs automatically on POSIX only;
+#ifdef _MSC_VER
+# define FC_REAL_CAPTURE_TEST DISABLED_realCrashCapturesUsableFrames
+#else
+# define FC_REAL_CAPTURE_TEST realCrashCapturesUsableFrames
+#endif
+
+TEST_F(CrashReporterTests, FC_REAL_CAPTURE_TEST)  // NOLINT
+{
+    const std::string crashDir = resolveCrashDir(tempDir);
+    EXPECT_DEATH(installAndCrash(crashDir), "");  // NOLINT
+
+    const auto path = findSoleFcrashIn(crashDir);
+    ASSERT_FALSE(path.empty());
+    const auto report = Base::CrashReporter::parse(path);
+
+    // The point of the whole exercise: a real crash has to produce a real stack.
+    ASSERT_GT(report.stackFrames.size(), 0U);
+
+    // Every frame must carry a genuine instruction address.
+    for (const auto& frame : report.stackFrames) {
+        EXPECT_NE(frame.rawAddress, 0U);
+    }
+
+    // At least one frame must be attributed to a module. Not all of them: an unattributable frame
+    // is legitimate and is recorded with NoString
+    EXPECT_TRUE(std::ranges::any_of(report.stackFrames, [](const auto& frame) {
+        return !frame.modulePath.empty();
+    }));
+
+    // A symbol is a function name. When a frame resolves from a symbol table rather than from
+    // debug information the symbolicator appends "+ <offset>", which would put a byte offset into
+    // the key consumers group crashes by, so the Reader trims it.
+    for (const auto& frame : report.stackFrames) {
+        if (!frame.symbol.has_value()) {
+            continue;
+        }
+        const auto& symbol = frame.symbol.value();
+        const auto plus = symbol.rfind(" + ");
+        const bool endsWithOffset = plus != std::string::npos
+            && symbol.find_first_not_of("0123456789", plus + 3) == std::string::npos;
+        EXPECT_FALSE(endsWithOffset) << "symbol still carries an offset: " << symbol;
+    }
+
+    // `file` is a source file. A frame with no debug information has none, and must not fall back
+    // to naming the object it resolved against.
+    for (const auto& frame : report.stackFrames) {
+        if (frame.file.has_value()) {
+            EXPECT_NE(frame.file.value(), frame.modulePath);
+        }
+    }
+
+    // A null dereference: SIGBUS is accepted because some platforms report an unmapped access that
+    // way rather than as SIGSEGV.
+    EXPECT_TRUE(report.code == addressCarryingFaultCode() || report.code == SIGBUS);
+    EXPECT_TRUE(report.faultAddress.has_value());
+    EXPECT_FALSE(report.partialWrite);
+}
+
+#ifndef _MSC_VER
+namespace
+{
+/// Reproduces the signal-handling configuration Writer::install() uses, so the platform assumption
+/// underneath the handler's entry reset is checked rather than assumed.
+void installHandlerThatFaultsInsideItself(void (*handler)(int, siginfo_t*, void*))
+{
+    static char alternateStack[64 * 1024];
+    stack_t signalStack {};
+    signalStack.ss_sp = alternateStack;
+    signalStack.ss_size = sizeof(alternateStack);
+    sigaltstack(&signalStack, nullptr);
+
+    struct sigaction action {};
+    action.sa_sigaction = handler;
+    action.sa_flags = SA_SIGINFO | SA_ONSTACK;
+    sigemptyset(&action.sa_mask);
+    for (int signalNumber : {SIGSEGV, SIGABRT, SIGBUS, SIGFPE, SIGILL}) {
+        sigaddset(&action.sa_mask, signalNumber);
+    }
+    for (int signalNumber : {SIGSEGV, SIGABRT, SIGBUS, SIGFPE, SIGILL}) {
+        sigaction(signalNumber, &action, nullptr);
+    }
+}
+
+/// The entry sequence from Writer::crashHandler, followed by a second fault. Both halves matter:
+/// restoring SIG_DFL without unblocking still hangs, because a synchronous fault on a blocked
+/// signal cannot be delivered and the faulting instruction simply retries forever.
+void handlerWithEntryReset(int /*sig*/, siginfo_t* /*info*/, void* /*ucontext*/)
+{
+    sigset_t unblockAll;
+    sigemptyset(&unblockAll);
+    for (int signalNumber : {SIGSEGV, SIGABRT, SIGBUS, SIGFPE, SIGILL}) {
+        std::signal(signalNumber, SIG_DFL);
+        sigaddset(&unblockAll, signalNumber);
+    }
+    pthread_sigmask(SIG_UNBLOCK, &unblockAll, nullptr);
+
+    volatile int* nowFaultInsideTheHandler = nullptr;
+    *nowFaultInsideTheHandler = 1;
+}
+
+/// Wait for a child, giving up after a deadline rather than blocking forever. Returns false if the
+/// child had to be killed, which is how a hang is turned into an ordinary test failure instead of
+/// a stuck CI job.
+bool waitForChildWithDeadline(pid_t child, int& status, int deadlineSeconds)
+{
+    for (int elapsed = 0; elapsed < deadlineSeconds * 100; ++elapsed) {
+        if (waitpid(child, &status, WNOHANG) == child) {
+            return true;
+        }
+        usleep(10000);  // 10ms
+    }
+    kill(child, SIGKILL);
+    waitpid(child, &status, 0);
+    return false;
+}
+}  // namespace
+
+// A fault inside the crash handler must terminate the process, not hang it.
+TEST_F(CrashReporterTests, faultInsideHandlerTerminatesRatherThanHanging)  // NOLINT
+{
+    const pid_t child = fork();
+    ASSERT_NE(child, -1);
+
+    if (child == 0) {
+        const rlimit noCoreDumps {0, 0};
+        setrlimit(RLIMIT_CORE, &noCoreDumps);
+        installHandlerThatFaultsInsideItself(&handlerWithEntryReset);
+        volatile int* faultHere = nullptr;
+        *faultHere = 1;
+        _exit(0);  // Unreachable unless the fault somehow survived
+    }
+
+    int status = 0;
+    ASSERT_TRUE(waitForChildWithDeadline(child, status, 10))
+        << "the handler hung after faulting inside itself";
+
+    ASSERT_TRUE(WIFSIGNALED(status)) << "expected death by signal, not a normal exit";
+    // The signal matters, not just the death: unblocking without restoring SIG_DFL also terminates
+    // the process, but only after re-entering the handler repeatedly, and it reports SIGILL.
+    EXPECT_EQ(WTERMSIG(status), SIGSEGV);
+}
+#endif  // not _MSC_VER
 
 // This test is always disabled in CI runs: to run it, use a direct manual call:
 // Base_tests_run.exe --gtest_also_run_disabled_tests \

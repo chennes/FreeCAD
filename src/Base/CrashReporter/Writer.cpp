@@ -48,8 +48,18 @@
 #include <string>
 #include <string_view>
 
+
 #include <Build/Version.h>
 #include <FCConfig.h>
+
+#if HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#ifdef HAVE_BACKTRACE_SYMBOLS
+#include <dlfcn.h>  // For dladdr
+#include <execinfo.h>  // For backtrace
+#endif
 
 // The Writer is intentionally C-style (fixed static buffers, raw write) for async-signal-safety,
 // so array decay and pointer arithmetic are pervasive and deliberate, not bounds hazards.
@@ -62,6 +72,7 @@
 
 static std::atomic_flag writing;
 static std::string resolvedCrashFilePath;  // Stored in UTF-8 (so on Windows, convert first)
+static bool canCaptureSignalSafely = false;  // Determined during the prewarm phase
 
 // Cygwin is a POSIX layer, so it uses the signal handlers rather than the Windows path.
 #if defined(FC_OS_LINUX) || defined(FC_OS_MACOSX) || defined(FC_OS_BSD) || defined(FC_OS_CYGWIN)
@@ -174,6 +185,17 @@ static void crashHandler(int sig, siginfo_t* info, [[maybe_unused]] void* uconte
     if (writing.test_and_set()) {
         return;
     }
+
+    // We don't want to hang if something goes wrong in the crash handling below, so make sure we
+    // just die. Same goes for if some other thread crashes while we're working: just bail out.
+    sigset_t unblockAll;
+    sigemptyset(&unblockAll);
+    for (int s : {SIGSEGV, SIGABRT, SIGBUS, SIGFPE, SIGILL}) {
+        std::signal(s, SIG_DFL);
+        sigaddset(&unblockAll, s);
+    }
+    pthread_sigmask(SIG_UNBLOCK, &unblockAll, nullptr);
+
     header.faultAddress = reinterpret_cast<std::uint64_t>(info->si_addr);
     header.code = static_cast<uint32_t>(sig);
     header.timestamp = std::time(nullptr);
@@ -193,24 +215,66 @@ static void crashHandler(int sig, siginfo_t* info, [[maybe_unused]] void* uconte
     // Now the call stack, if we have cpptrace:
     std::uint32_t frameCount = 0;
 # ifdef FC_HAVE_CPPTRACE
-    cpptrace::frame_ptr rawFrames[MaxFrames];
-    constexpr std::size_t skip {0};  // Don't skip any frames at this stage
-    std::size_t nFrames = cpptrace::safe_generate_raw_trace(rawFrames, MaxFrames, skip);
-    cpptrace::safe_object_frame objectFrame;
-    for (std::uint32_t frame = 0; frame < nFrames && frameCount < MaxFrames; ++frame) {
-        cpptrace::get_safe_object_frame(rawFrames[frame], &objectFrame);
-        Frame extractedFrame;
-        extractedFrame.rawAddress = objectFrame.raw_address;
-        extractedFrame.moduleOffset = objectFrame.address_relative_to_object_start;
-        extractedFrame.moduleStringOffset = addToStringTable(objectFrame.object_path);
-        std::memcpy(
-            &fileBuffer[sizeof(Header) + frameCount * sizeof(Frame)],
-            &extractedFrame,
-            sizeof(Frame)
-        );
-        ++frameCount;
+    if (canCaptureSignalSafely) {
+        cpptrace::frame_ptr rawFrames[MaxFrames];
+        constexpr std::size_t skip {0};  // Don't skip any frames at this stage
+        std::size_t nFrames = cpptrace::safe_generate_raw_trace(rawFrames, MaxFrames, skip);
+        cpptrace::safe_object_frame objectFrame;
+        for (std::uint32_t frame = 0; frame < nFrames && frameCount < MaxFrames; ++frame) {
+            cpptrace::get_safe_object_frame(rawFrames[frame], &objectFrame);
+            Frame extractedFrame;
+            extractedFrame.rawAddress = objectFrame.raw_address;
+            extractedFrame.moduleOffset = objectFrame.address_relative_to_object_start;
+            extractedFrame.moduleStringOffset = addToStringTable(objectFrame.object_path);
+            std::memcpy(
+                &fileBuffer[sizeof(Header) + frameCount * sizeof(Frame)],
+                &extractedFrame,
+                sizeof(Frame)
+            );
+            ++frameCount;
+        }
     }
+    else
 # endif
+    {
+        // The capture is NOT async-signal-safe: this is mostly macOS, where we currently cannot
+        // get a version of cpptrace compiled against libunwind via pixi.
+# ifdef HAVE_BACKTRACE_SYMBOLS
+        void* callstack[MaxFrames];
+        int nFrames = backtrace(callstack, MaxFrames);
+        for (int frame = 0; frame < nFrames && frameCount < MaxFrames; ++frame) {
+            Dl_info frameInfoStruct {};
+
+            // A Dl_info contains:
+            // const char* dli_fname -- pathname of the shared object containing the address
+            // void* dli_fbase -- base address (mach_header) at which the image is mapped
+            // const char* dli_sname -- nearest run-time symbol at or below the address
+            // void* dli_saddr -- value of the symbol returned in dli_sname
+            const int found = dladdr(callstack[frame], &frameInfoStruct);
+
+            Frame extractedFrame;
+            extractedFrame.rawAddress = reinterpret_cast<std::uint64_t>(callstack[frame]);
+            if (found == 0 /*yes, zero... not very POSIX-ish*/
+                || frameInfoStruct.dli_fname == nullptr) {
+                // We don't really know anything about this module (except the address)
+                extractedFrame.moduleOffset = 0;
+                extractedFrame.moduleStringOffset = NoString;
+            }
+            else {
+                const auto address = reinterpret_cast<std::uintptr_t>(callstack[frame]);
+                const auto base = reinterpret_cast<std::uintptr_t>(frameInfoStruct.dli_fbase);
+                extractedFrame.moduleOffset = address - base;
+                extractedFrame.moduleStringOffset = addToStringTable(frameInfoStruct.dli_fname);
+            }
+            std::memcpy(
+                &fileBuffer[sizeof(Header) + frameCount * sizeof(Frame)],
+                &extractedFrame,
+                sizeof(Frame)
+            );
+            ++frameCount;
+        }
+# endif
+    }
     std::uint32_t fileSize = finishHeader(frameCount);
     if (fileSize > 0) {
         writeRawBufferPOSIX(fileSize);
@@ -314,7 +378,9 @@ void Writer::prewarm()
     }
 
     // Record whether we will be doing a signal-safe capture
-    if (cpptrace::can_signal_safe_unwind() && cpptrace::can_get_safe_object_frame()) {
+    canCaptureSignalSafely =
+        cpptrace::can_signal_safe_unwind() && cpptrace::can_get_safe_object_frame();
+    if (canCaptureSignalSafely) {
         header.flags |= Flags::CaptureWasSignalSafe;
     }
 # endif
