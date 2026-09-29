@@ -894,3 +894,12 @@ class TestOnViewParameterGui(SketcherGuiTestCase):
                 view_params.SetUnsigned(color_key, old_color)
             else:
                 view_params.RemUnsigned(color_key)
+
+
+# Temporary CI diagnostic: repeat the flaky scenario to raise the chance of capturing a failure.
+for repeat_index in range(25):
+    setattr(
+        TestOnViewParameterGui,
+        f"test_origin_marker_tracks_drawing_tool_state_repeat_{repeat_index:02d}",
+        TestOnViewParameterGui.test_origin_marker_tracks_drawing_tool_state,
+    )
