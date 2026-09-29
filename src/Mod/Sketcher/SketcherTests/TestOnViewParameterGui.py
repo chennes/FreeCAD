@@ -284,6 +284,33 @@ class TestOnViewParameterGui(SketcherGuiTestCase):
 
         return sensors, updates, completed_updates
 
+    def view_state(self, label, view, viewport, points=()):
+        camera = view.getCameraNode()
+        scale = viewport.devicePixelRatioF()
+        _, coin_height = view.getSize()
+
+        def focal_plane_point(point):
+            x = int(round(point.x() * scale))
+            y = int(round(coin_height - point.y() * scale - 1))
+            vector = view.getPointOnFocalPlane(x, y)
+            return tuple(round(value, 6) for value in (vector.x, vector.y, vector.z))
+
+        height = camera.height.getValue() if hasattr(camera, "height") else None
+        lines = [
+            f"[{label}]",
+            f"  viewport={viewport.size().toTuple()} coin_size={tuple(view.getSize())} dpr={scale}",
+            f"  camera={view.getCameraType()} navigation={view.getNavigationType()}",
+            f"  orientation={camera.orientation.getValue().getValue()}",
+            f"  position={camera.position.getValue().getValue()} focal={camera.focalDistance.getValue()}",
+            f"  near={camera.nearDistance.getValue()} far={camera.farDistance.getValue()} height={height}",
+            f"  origin_on_screen={tuple(view.getPointOnScreen(FreeCAD.Vector(0, 0, 0)))}",
+            f"  geometry_count={self.sketch.GeometryCount} visible_spinboxes={len(self.visible_spinboxes())}",
+            f"  origin_marker_hollow={self.origin_marker_is('CIRCLE_LINE')}",
+        ]
+        for name, point in points:
+            lines.append(f"  {name}={point.toTuple()} focal_plane={focal_plane_point(point)}")
+        return "\n".join(lines)
+
     def test_origin_marker_tracks_drawing_tool_state(self):
         """The origin marker tracks drawing state during off-origin interaction."""
 
@@ -302,6 +329,14 @@ class TestOnViewParameterGui(SketcherGuiTestCase):
             viewport,
             QtCore.QPoint(origin_point.x() + 80, origin_point.y() - 60),
         )
+        diagnostics = [
+            self.view_state(
+                "points computed",
+                view,
+                viewport,
+                (("origin_point", origin_point), ("drawing_point", drawing_point)),
+            )
+        ]
         filled_marker = self.origin_marker_index()
         self.assertTrue(
             self.origin_marker_is("CIRCLE_FILLED"),
@@ -379,14 +414,20 @@ class TestOnViewParameterGui(SketcherGuiTestCase):
             ),
             "Expected the second line tool activation to switch the origin marker appearance",
         )
+        clicked_points = (("drawing_point", drawing_point), ("second_point", second_point))
+        diagnostics.append(self.view_state("before clicks", view, viewport, clicked_points))
         self.move(viewport, drawing_point)
         self.click(viewport, drawing_point)
+        diagnostics.append(self.view_state("after first click", view, viewport, clicked_points))
         self.move(viewport, second_point)
         self.click(viewport, second_point)
+        diagnostics.append(self.view_state("after second click", view, viewport, clicked_points))
+        print("\nORIGIN MARKER DIAGNOSTICS\n" + "\n".join(diagnostics), flush=True)
         self.assertGreater(
             self.sketch.GeometryCount,
             0,
-            "Expected geometry away from the origin before cancelling the tool",
+            "Expected geometry away from the origin before cancelling the tool\n"
+            + "\n".join(diagnostics),
         )
         self.cancel_drawing_tool(viewport)
         self.assertTrue(
