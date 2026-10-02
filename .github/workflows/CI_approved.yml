@@ -101,7 +101,7 @@ jobs:
               for (let run of olderRuns) {
                 // Wait even before build jobs exist, or simultaneous label events all build.
                 while (run.status !== 'completed') {
-                  core.info(`Waiting for run ${run.id} (status: ${run.status}) to complete`);
+                  core.info(`Waiting for run ${run.html_url} (status: ${run.status}) to complete`);
                   await new Promise(resolve => setTimeout(resolve, 60000));
                   ({ data: run } = await github.rest.actions.getWorkflowRun({
                     owner: context.repo.owner,
