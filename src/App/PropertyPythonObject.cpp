@@ -26,6 +26,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -74,120 +75,170 @@ bool isUnderDirectory(std::string filePath, std::string directory)
 }
 
 /**
- * @brief Check whether a module import should be allowed during document restore.
+ * @brief Collect the directories that proxy modules may be imported from during document restore.
  *
- * Modules already in @c sys.modules are permitted -- they were loaded by FreeCAD core or addons
- * during normal startup.  For modules not yet loaded we use @c importlib.util.find_spec() to
- * locate where the module would come from without executing it, then verify that path is under
- * a FreeCAD module directory.  This prevents a crafted FCStd from importing arbitrary modules
- * (whose <tt>__init__.py</tt> could run malicious code on import) while still allowing
- * legitimate lazy-loaded FreeCAD workbench modules to restore.
+ * These are FreeCAD's module and macro directories, plus every directory of the @c freecad
+ * namespace package, which is reserved for addons wherever they are installed.
  *
- * @param[in] moduleName The fully qualified Python module name to check.
- * @return @c true if the module is allowed, @c false otherwise.
+ * @return The allowed directories.
  */
-bool isAllowedModule(const std::string& moduleName)
+std::vector<std::string> allowedModuleDirectories()
 {
-    Py::Dict sysModules(PyImport_GetModuleDict());
-    if (sysModules.isNone()) {
-        return false;
-    }
-
-    // 1) Already loaded? Must be safe.
-    if (sysModules.hasKey(moduleName)) {
-        return true;
-    }
-
-    // 2) Is it *in* an already loaded module? Safe.
-    std::string::size_type dot = moduleName.find('.');
-    if (dot != std::string::npos) {
-        std::string topLevel = moduleName.substr(0, dot);
-        if (sysModules.hasKey(topLevel)) {
-            return true;
-        }
-    }
-
-    // 3) The complicated path. Use importlib.util.find_spec() to find the origin of the module,
-    // being careful to NOT load it (which is the code-execution vulnerability we're trying to
-    // avoid in the first place). See if it's in one of our "safe" paths, and if it is, allow it.
-    // Safe paths are a few subdirectories we recognize in the set "home", "resource", and
-    // "userData" paths. Don't allow modules from outside of these directories. Not 100% mitigation,
-    // but it's better than nothing.
-    PyObject* importlibUtil = PyImport_ImportModule("importlib.util");
-    if (!importlibUtil) {
-        PyErr_Clear();
-        return false;
-    }
-    Py::Module importlib(importlibUtil, true);
-    Py::Callable findSpec(importlib.getAttr("find_spec"));
-
-    // FreeCAD adds each workbench directory to sys.path individually (e.g. .../Mod/Assembly/),
-    // so a module stored as "Assembly.JointObject" in the FCStd is actually importable as just
-    // "JointObject". Try the full name first, then the part after the first dot.
-    std::vector<std::string> namesToTry = {moduleName};
-    if (dot != std::string::npos) {
-        namesToTry.push_back(moduleName.substr(dot + 1));
-    }
-    Py::Object spec;
-    for (const std::string& name : namesToTry) {
-        Py::Tuple args(1);
-        args.setItem(0, Py::String(name));
-        try {
-            spec = findSpec.apply(args);
-        }
-        catch (Py::Exception&) {
-            PyErr_Clear();
-            continue;
-        }
-        if (!spec.isNone()) {
-            break;
-        }
-    }
-    if (spec.isNone()) {
-        return false;
-    }
-
-    // Use FreeCAD.__ModDirs__ as the authoritative list of allowed module directories.
-    // This is populated during startup by FreeCADInit.py and includes built-in workbenches,
-    // user addons, and any additional configured module paths.
     Py::Module freecad(PyImport_ImportModule("FreeCAD"), true);
-    if (!freecad.hasAttr("__ModDirs__") or !freecad.hasAttr("__MacroDirs__")) {
-        throw Py::RuntimeError("FreeCAD.__ModDirs__ or FreeCAD.__MacroDirs__ not set -- FreeCADInit.py has not run yet");
+    if (!freecad.hasAttr("__ModDirs__") || !freecad.hasAttr("__MacroDirs__")) {
+        throw Py::RuntimeError(
+            "FreeCAD.__ModDirs__ or FreeCAD.__MacroDirs__ not set -- FreeCADInit.py has not run yet"
+        );
     }
-    Py::List allowedDirs(freecad.getAttr("__ModDirs__"));
-    allowedDirs.extend(freecad.getAttr("__MacroDirs__"));
-    const int allowedDirsSize = static_cast<int>(allowedDirs.size());
 
-    auto isUnderFreeCAD = [&](const std::string& path) {
-        for (int i = 0; i < allowedDirsSize; ++i) {
-            if (isUnderDirectory(path, Py::String(allowedDirs[i]).as_std_string())) {
-                return true;
-            }
+    std::vector<std::string> directories;
+    auto appendAll = [&directories](const Py::Sequence& paths) {
+        for (const auto& path : paths) {
+            directories.push_back(Py::String(path.ptr()).as_std_string());
         }
-        return false;
+    };
+    appendAll(freecad.getAttr("__ModDirs__"));
+    appendAll(freecad.getAttr("__MacroDirs__"));
+
+    Py::Dict sysModules(PyImport_GetModuleDict());
+    if (sysModules.hasKey("freecad")) {
+        Py::Object addonNamespace = sysModules.getItem("freecad");
+        if (addonNamespace.hasAttr("__path__")) {
+            appendAll(addonNamespace.getAttr("__path__"));
+        }
+    }
+    return directories;
+}
+
+/**
+ * @brief Check whether importing the module described by a spec only runs trusted code.
+ *
+ * A spec with a file origin must lie under an allowed directory. A spec without a loader is a
+ * namespace package, whose import runs no code. Any other spec is a synthetic module from a
+ * migration finder such as @c FemMigrateApp, and is trusted if the finder's own module is.
+ *
+ * @param[in] spec The result of @c importlib.util.find_spec().
+ * @param[in] allowedDirectories The directories trusted modules may come from.
+ * @return @c true if the module may be imported.
+ */
+bool isSpecAllowed(const Py::Object& spec, const std::vector<std::string>& allowedDirectories)
+{
+    auto isUnderAllowedDirectory = [&allowedDirectories](const std::string& path) {
+        return std::ranges::any_of(allowedDirectories, [&path](const std::string& directory) {
+            return isUnderDirectory(path, directory);
+        });
     };
 
-    // Get the origin (i.e. the file path) from the spec.
     Py::Object origin = spec.getAttr("origin");
-    if (!origin.isNone() && origin.isString()) {
-        return isUnderFreeCAD(Py::String(origin).as_std_string());
+    if (origin.isString()) {
+        return isUnderAllowedDirectory(Py::String(origin).as_std_string());
     }
 
-    // No origin -- this could be a built-in module (why is an FCStd trying to load this? Very
-    // suspicious, block it) or a synthetic module from a FreeCAD migration finder like
-    // FemMigrateApp (which we will allow).  Check whether the spec's loader itself comes from a
-    // FreeCAD module directory.
-    if (!spec.hasAttr("loader") || spec.getAttr("loader").isNone()) {
-        return false;
-    }
     Py::Object loader = spec.getAttr("loader");
-    auto loaderType = loader.type();
+    if (loader.isNone()) {
+        return !spec.getAttr("submodule_search_locations").isNone();
+    }
+
+    Py::Object loaderType = loader.type();
     if (!loaderType.hasAttr("__module__")) {
         return false;
     }
     std::string loaderModuleName = Py::String(loaderType.getAttr("__module__")).as_std_string();
-    Py::Object loaderMod = sysModules.getItem(loaderModuleName);
-    return isUnderFreeCAD(Py::String(loaderMod.getAttr("__file__")).as_std_string());
+    Py::Dict sysModules(PyImport_GetModuleDict());
+    if (!sysModules.hasKey(loaderModuleName)) {
+        return false;
+    }
+    Py::Object loaderModule = sysModules.getItem(loaderModuleName);
+    if (!loaderModule.hasAttr("__file__")) {
+        return false;
+    }
+    Py::Object loaderFile = loaderModule.getAttr("__file__");
+    return loaderFile.isString() && isUnderAllowedDirectory(Py::String(loaderFile).as_std_string());
+}
+
+/**
+ * @brief Check every level of a dotted module name without running untrusted code.
+ *
+ * @c find_spec() imports the parent of a dotted name, so each level is vetted before the next
+ * one is looked up. Levels already in @c sys.modules are skipped because importing them runs no
+ * code, but their children are still checked.
+ *
+ * @param[in] moduleName The fully qualified Python module name to check.
+ * @param[in] findSpec The @c importlib.util.find_spec() callable.
+ * @param[in] allowedDirectories The directories trusted modules may come from.
+ * @return @c true if importing @p moduleName only runs trusted code.
+ */
+bool isEveryLevelAllowed(
+    const std::string& moduleName,
+    const Py::Callable& findSpec,
+    const std::vector<std::string>& allowedDirectories
+)
+{
+    Py::Dict sysModules(PyImport_GetModuleDict());
+    for (std::string::size_type dot = moduleName.find('.');; dot = moduleName.find('.', dot + 1)) {
+        std::string prefix = moduleName.substr(0, dot);
+        if (!sysModules.hasKey(prefix)) {
+            Py::Object spec;
+            try {
+                spec = findSpec.apply(Py::TupleN(Py::String(prefix)));
+            }
+            catch (Py::Exception&) {
+                PyErr_Clear();
+                return false;
+            }
+            if (spec.isNone() || !isSpecAllowed(spec, allowedDirectories)) {
+                return false;
+            }
+        }
+        if (dot == std::string::npos) {
+            return true;
+        }
+    }
+}
+
+/**
+ * @brief Find the name under which a proxy module may be imported during document restore.
+ *
+ * A module already in @c sys.modules is permitted because importing it again runs no code. Any
+ * other module must resolve, at every level of its dotted name, to code under a FreeCAD module,
+ * macro, or addon directory. This prevents a crafted FCStd from importing arbitrary modules
+ * (whose <tt>__init__.py</tt> could run malicious code on import) while still allowing
+ * legitimate lazy-loaded FreeCAD workbench modules to restore.
+ *
+ * @param[in] moduleName The fully qualified Python module name stored in the document.
+ * @return The name to import, or @c std::nullopt if the module is not permitted.
+ */
+std::optional<std::string> allowedModuleName(const std::string& moduleName)
+{
+    Py::Dict sysModules(PyImport_GetModuleDict());
+    if (sysModules.hasKey(moduleName)) {
+        return moduleName;
+    }
+
+    PyObject* importlibUtil = PyImport_ImportModule("importlib.util");
+    if (!importlibUtil) {
+        PyErr_Clear();
+        return std::nullopt;
+    }
+    Py::Module importlib(importlibUtil, true);
+    Py::Callable findSpec(importlib.getAttr("find_spec"));
+    const std::vector<std::string> allowedDirectories = allowedModuleDirectories();
+
+    if (isEveryLevelAllowed(moduleName, findSpec, allowedDirectories)) {
+        return moduleName;
+    }
+
+    // FreeCAD adds each workbench directory to sys.path individually (e.g. .../Mod/Assembly/),
+    // so a module stored as "Assembly.JointObject" may only be importable as "JointObject".
+    std::string::size_type dot = moduleName.find('.');
+    if (dot == std::string::npos) {
+        return std::nullopt;
+    }
+    std::string shortName = moduleName.substr(dot + 1);
+    if (sysModules.hasKey(shortName) || isEveryLevelAllowed(shortName, findSpec, allowedDirectories)) {
+        return shortName;
+    }
+    return std::nullopt;
 }
 
 }  // anonymous namespace
@@ -482,7 +533,8 @@ void PropertyPythonObject::Restore(Base::XMLReader& reader)
         try {
             if (reader.hasAttribute("module") && reader.hasAttribute("class")) {
                 std::string moduleName = reader.getAttribute<const char*>("module");
-                if (!isAllowedModule(moduleName)) {
+                std::optional<std::string> importName = allowedModuleName(moduleName);
+                if (!importName) {
                     Base::Console().warning(
                         "PropertyPythonObject::Restore: blocked import of module '{}' during"
                         " document restore. Only modules from FreeCAD or installed addons"
@@ -490,7 +542,7 @@ void PropertyPythonObject::Restore(Base::XMLReader& reader)
                         moduleName);
                     throw Py::ImportError("module not permitted: " + moduleName);
                 }
-                Py::Module mod(PyImport_ImportModule(moduleName.c_str()), true);
+                Py::Module mod(PyImport_ImportModule(importName->c_str()), true);
                 if (mod.isNull()) {
                     throw Py::Exception();
                 }

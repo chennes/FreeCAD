@@ -23,7 +23,11 @@
 
 import FreeCAD, os, unittest, tempfile, zipfile
 from FreeCAD import Base
+import builtins
+import importlib
 import math
+import shutil
+import sys
 import xml.etree.ElementTree as ET
 
 # ---------------------------------------------------------------------------
@@ -1070,6 +1074,102 @@ class DocumentSaveRestoreCases(unittest.TestCase):
     def tearDown(self):
         # closing doc
         FreeCAD.closeDocument("SaveRestoreTests")
+
+
+class DocumentProxyModuleRestoreCases(unittest.TestCase):
+    """Restoring a Python proxy must never run code from outside the allowed module directories."""
+
+    TEST_MODULES = (
+        "trustedpkg",
+        "trustedpkg.proxy",
+        "trustedmodule",
+        "untrustedpkg",
+        "untrustedpkg.child",
+    )
+    PROXY_SOURCE = "class Proxy:\n    pass\n"
+    RECORD_IMPORT = "import builtins\nbuiltins.untrustedImports.append(__name__)\n"
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.trusted = os.path.join(self.root, "trusted")
+        self.untrusted = os.path.join(self.root, "untrusted")
+        self.writeModule(self.trusted, "trustedpkg/__init__.py", "")
+        self.writeModule(self.trusted, "trustedpkg/proxy.py", self.PROXY_SOURCE)
+        self.writeModule(self.trusted, "trustedmodule.py", self.PROXY_SOURCE)
+        self.writeModule(self.untrusted, "untrustedpkg/__init__.py", self.RECORD_IMPORT)
+        self.writeModule(
+            self.untrusted, "untrustedpkg/child.py", self.RECORD_IMPORT + self.PROXY_SOURCE
+        )
+        sys.path[:0] = [self.trusted, self.untrusted]
+        importlib.invalidate_caches()
+        self.savedMacroDirs = FreeCAD.__MacroDirs__
+        FreeCAD.__MacroDirs__ = self.savedMacroDirs + [self.trusted]
+        builtins.untrustedImports = []
+
+    def tearDown(self):
+        FreeCAD.__MacroDirs__ = self.savedMacroDirs
+        sys.path.remove(self.trusted)
+        sys.path.remove(self.untrusted)
+        for name in self.TEST_MODULES:
+            sys.modules.pop(name, None)
+        del builtins.untrustedImports
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    @staticmethod
+    def writeModule(directory, relativePath, source):
+        path = os.path.join(directory, relativePath)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(source)
+
+    def restoreProxyFromModule(self, moduleName):
+        import trustedpkg.proxy
+
+        doc = FreeCAD.newDocument("ProxyModuleRestore")
+        doc.addObject("App::FeaturePython", "Feature").Proxy = trustedpkg.proxy.Proxy()
+        savedPath = os.path.join(self.root, "saved.FCStd")
+        doc.saveAs(savedPath)
+        FreeCAD.closeDocument(doc.Name)
+        for name in ("trustedpkg", "trustedpkg.proxy"):
+            sys.modules.pop(name)
+
+        craftedPath = os.path.join(self.root, "crafted.FCStd")
+        with zipfile.ZipFile(savedPath) as source, zipfile.ZipFile(craftedPath, "w") as target:
+            for info in source.infolist():
+                data = source.read(info.filename)
+                if info.filename == "Document.xml":
+                    data = data.replace(
+                        b'module="trustedpkg.proxy"', f'module="{moduleName}"'.encode()
+                    )
+                target.writestr(info, data)
+
+        doc = FreeCAD.openDocument(craftedPath)
+        proxy = doc.Feature.Proxy
+        FreeCAD.closeDocument(doc.Name)
+        return proxy
+
+    def testTrustedPackageChildRestores(self):
+        proxy = self.restoreProxyFromModule("trustedpkg.proxy")
+        self.assertEqual(type(proxy).__module__, "trustedpkg.proxy")
+
+    def testUntrustedParentIsNotImportedForMissingChild(self):
+        proxy = self.restoreProxyFromModule("untrustedpkg.missing")
+        self.assertIsNone(proxy)
+        self.assertEqual(builtins.untrustedImports, [])
+
+    def testLoadedParentDoesNotAllowUntrustedChild(self):
+        import untrustedpkg
+
+        builtins.untrustedImports.clear()
+        proxy = self.restoreProxyFromModule("untrustedpkg.child")
+        self.assertIsNone(proxy)
+        self.assertEqual(builtins.untrustedImports, [])
+        self.assertNotIn("untrustedpkg.child", sys.modules)
+
+    def testShortNameFallbackDoesNotImportUntrustedParent(self):
+        proxy = self.restoreProxyFromModule("untrustedpkg.trustedmodule")
+        self.assertEqual(type(proxy).__module__, "trustedmodule")
+        self.assertEqual(builtins.untrustedImports, [])
 
 
 class DocumentRecoveryCases(unittest.TestCase):
